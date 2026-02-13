@@ -38,6 +38,30 @@ export type Database = {
         }
         Relationships: []
       }
+      hall_assignments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          hall_number: string
+          id: string
+          roll_number: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          hall_number: string
+          id?: string
+          roll_number: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          hall_number?: string
+          id?: string
+          roll_number?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
