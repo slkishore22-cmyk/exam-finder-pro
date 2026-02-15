@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, LogOut, Trash2, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +29,8 @@ const AdminDashboard = () => {
   const [assignments, setAssignments] = useState<HallAssignment[]>([]);
   const [fetching, setFetching] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,9 +72,41 @@ const AdminDashboard = () => {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     } else {
       setAssignments(prev => prev.filter(a => a.id !== id));
+      setSelected(prev => { const next = new Set(prev); next.delete(id); return next; });
       toast({ title: "Assignment deleted" });
     }
     setDeleting(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    setBulkDeleting(true);
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("hall_assignments").delete().in("id", ids);
+    if (error) {
+      toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
+    } else {
+      setAssignments(prev => prev.filter(a => !selected.has(a.id)));
+      setSelected(new Set());
+      toast({ title: `${ids.length} assignment${ids.length > 1 ? "s" : ""} deleted` });
+    }
+    setBulkDeleting(false);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === assignments.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(assignments.map(a => a.id)));
+    }
   };
 
   const handleLogout = async () => {
@@ -94,6 +129,12 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Hall Assignments</h1>
           <div className="flex items-center gap-2">
+            {selected.size > 0 && (
+              <Button variant="destructive" size="sm" onClick={handleBulkDelete} disabled={bulkDeleting}>
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Delete {selected.size}
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={fetchAssignments} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} />
               Refresh
@@ -124,6 +165,12 @@ const AdminDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={assignments.length > 0 && selected.size === assignments.length}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Roll Number</TableHead>
                   <TableHead>Hall Number</TableHead>
@@ -132,7 +179,13 @@ const AdminDashboard = () => {
               </TableHeader>
               <TableBody>
                 {assignments.map((a, i) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} data-state={selected.has(a.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selected.has(a.id)}
+                        onCheckedChange={() => toggleSelect(a.id)}
+                      />
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
                     <TableCell className="font-medium">{a.roll_number}</TableCell>
                     <TableCell>{a.hall_number}</TableCell>
