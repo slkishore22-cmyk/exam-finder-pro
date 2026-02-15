@@ -1,36 +1,36 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Plus, LogOut, Trash2, RefreshCw } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, LogOut, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import AddAssignmentDialog from "@/components/AddAssignmentDialog";
+import BatchCard from "@/components/BatchCard";
 
 interface HallAssignment {
   id: string;
   roll_number: string;
   hall_number: string;
+  batch_id: string | null;
+}
+
+interface Batch {
+  id: string;
+  name: string;
+  scheduled_at: string | null;
   created_at: string;
+}
+
+interface GroupedBatch extends Batch {
+  assignments: HallAssignment[];
 }
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [assignments, setAssignments] = useState<HallAssignment[]>([]);
+  const [batches, setBatches] = useState<GroupedBatch[]>([]);
   const [fetching, setFetching] = useState(false);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,67 +46,42 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchAssignments = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setFetching(true);
-    const { data, error } = await supabase
-      .from("hall_assignments")
-      .select("id, roll_number, hall_number, created_at")
-      .order("hall_number")
-      .order("roll_number");
-    if (error) {
-      toast({ title: "Failed to load assignments", variant: "destructive" });
+    const [batchRes, assignRes] = await Promise.all([
+      supabase.from("assignment_batches").select("id, name, scheduled_at, created_at").order("created_at", { ascending: false }),
+      supabase.from("hall_assignments").select("id, roll_number, hall_number, batch_id").order("roll_number"),
+    ]);
+
+    if (batchRes.error || assignRes.error) {
+      toast({ title: "Failed to load data", variant: "destructive" });
     } else {
-      setAssignments(data || []);
+      const batchList = batchRes.data || [];
+      const assignList = assignRes.data || [];
+      const grouped: GroupedBatch[] = batchList.map(b => ({
+        ...b,
+        assignments: assignList.filter(a => a.batch_id === b.id),
+      }));
+      setBatches(grouped);
     }
     setFetching(false);
   }, [toast]);
 
   useEffect(() => {
-    if (!loading) fetchAssignments();
-  }, [loading, fetchAssignments]);
+    if (!loading) fetchData();
+  }, [loading, fetchData]);
 
-  const handleDelete = async (id: string) => {
-    setDeleting(id);
-    const { error } = await supabase.from("hall_assignments").delete().eq("id", id);
+  const handleDeleteBatch = async (batchId: string) => {
+    setDeletingBatch(batchId);
+    // Deleting batch cascades to assignments
+    const { error } = await supabase.from("assignment_batches").delete().eq("id", batchId);
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     } else {
-      setAssignments(prev => prev.filter(a => a.id !== id));
-      setSelected(prev => { const next = new Set(prev); next.delete(id); return next; });
-      toast({ title: "Assignment deleted" });
+      setBatches(prev => prev.filter(b => b.id !== batchId));
+      toast({ title: "Batch deleted" });
     }
-    setDeleting(null);
-  };
-
-  const handleBulkDelete = async () => {
-    if (selected.size === 0) return;
-    setBulkDeleting(true);
-    const ids = Array.from(selected);
-    const { error } = await supabase.from("hall_assignments").delete().in("id", ids);
-    if (error) {
-      toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
-    } else {
-      setAssignments(prev => prev.filter(a => !selected.has(a.id)));
-      setSelected(new Set());
-      toast({ title: `${ids.length} assignment${ids.length > 1 ? "s" : ""} deleted` });
-    }
-    setBulkDeleting(false);
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === assignments.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(assignments.map(a => a.id)));
-    }
+    setDeletingBatch(null);
   };
 
   const handleLogout = async () => {
@@ -124,18 +99,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
-      {/* Header */}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Hall Assignments</h1>
           <div className="flex items-center gap-2">
-            {selected.size > 0 && (
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete} disabled={bulkDeleting}>
-                <Trash2 className="w-4 h-4 mr-1.5" />
-                Delete {selected.size}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={fetchAssignments} disabled={fetching}>
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} />
               Refresh
             </Button>
@@ -150,74 +119,39 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="border border-border rounded-xl overflow-hidden"
-        >
-          {assignments.length === 0 && !fetching ? (
-            <div className="py-16 text-center text-muted-foreground text-sm">
-              No assignments yet. Click <span className="font-medium text-foreground">Add</span> to get started.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={assignments.length > 0 && selected.size === assignments.length}
-                      onCheckedChange={toggleAll}
-                    />
-                  </TableHead>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Roll Number</TableHead>
-                  <TableHead>Hall Number</TableHead>
-                  <TableHead className="w-20 text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assignments.map((a, i) => (
-                  <TableRow key={a.id} data-state={selected.has(a.id) ? "selected" : undefined}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selected.has(a.id)}
-                        onCheckedChange={() => toggleSelect(a.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                    <TableCell className="font-medium">{a.roll_number}</TableCell>
-                    <TableCell>{a.hall_number}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(a.id)}
-                        disabled={deleting === a.id}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {fetching && (
-            <div className="py-8 flex justify-center">
-              <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            </div>
-          )}
-        </motion.div>
+        {/* Batch grid */}
+        {batches.length === 0 && !fetching ? (
+          <div className="py-16 text-center text-muted-foreground text-sm border border-border rounded-xl">
+            No batches yet. Click <span className="font-medium text-foreground">Add</span> to get started.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {batches.map(b => (
+              <BatchCard
+                key={b.id}
+                batchId={b.id}
+                name={b.name}
+                scheduledAt={b.scheduled_at}
+                assignments={b.assignments}
+                onDeleteBatch={handleDeleteBatch}
+                deleting={deletingBatch === b.id}
+              />
+            ))}
+          </div>
+        )}
+
+        {fetching && (
+          <div className="py-8 flex justify-center">
+            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        )}
 
         <p className="text-xs text-muted-foreground mt-3 text-center">
-          {assignments.length} total assignment{assignments.length !== 1 ? "s" : ""}
+          {batches.length} batch{batches.length !== 1 ? "es" : ""} · {batches.reduce((s, b) => s + b.assignments.length, 0)} total assignments
         </p>
       </div>
 
-      <AddAssignmentDialog open={open} onOpenChange={setOpen} onSaved={fetchAssignments} />
+      <AddAssignmentDialog open={open} onOpenChange={setOpen} onSaved={fetchData} />
     </div>
   );
 };
