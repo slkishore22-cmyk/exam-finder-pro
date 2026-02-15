@@ -134,6 +134,7 @@ const AdminDashboard = () => {
                 scheduledAt={b.scheduled_at}
                 assignments={b.assignments}
                 onDeleteBatch={handleDeleteBatch}
+                onRefresh={fetchData}
                 deleting={deletingBatch === b.id}
               />
             ))}
