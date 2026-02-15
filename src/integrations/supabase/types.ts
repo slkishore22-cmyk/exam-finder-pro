@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_batches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          scheduled_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          scheduled_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          scheduled_at?: string | null
+        }
+        Relationships: []
+      }
       exams: {
         Row: {
           created_at: string
@@ -40,6 +64,7 @@ export type Database = {
       }
       hall_assignments: {
         Row: {
+          batch_id: string | null
           created_at: string
           created_by: string | null
           hall_number: string
@@ -47,6 +72,7 @@ export type Database = {
           roll_number: string
         }
         Insert: {
+          batch_id?: string | null
           created_at?: string
           created_by?: string | null
           hall_number: string
@@ -54,13 +80,22 @@ export type Database = {
           roll_number: string
         }
         Update: {
+          batch_id?: string | null
           created_at?: string
           created_by?: string | null
           hall_number?: string
           id?: string
           roll_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "hall_assignments_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

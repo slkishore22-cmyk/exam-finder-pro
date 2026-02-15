@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, CheckCircle2 } from "lucide-react";
+import { Plus, CheckCircle2, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -19,25 +21,35 @@ interface AddAssignmentDialogProps {
 }
 
 const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialogProps) => {
+  const [batchName, setBatchName] = useState("");
   const [hallNumber, setHallNumber] = useState("");
   const [rowCount, setRowCount] = useState("");
   const [rollNumbers, setRollNumbers] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [enableSchedule, setEnableSchedule] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { toast } = useToast();
 
   const resetModal = () => {
+    setBatchName("");
     setHallNumber("");
     setRowCount("");
     setRollNumbers([]);
     setConfirmed(false);
     setSaved(false);
+    setEnableSchedule(false);
+    setScheduledAt("");
   };
 
   const handleConfirm = () => {
     const count = parseInt(rowCount);
+    if (!batchName.trim()) {
+      toast({ title: "Enter a name for this batch", variant: "destructive" });
+      return;
+    }
     if (!hallNumber.trim()) {
       toast({ title: "Missing hall number", variant: "destructive" });
       return;
@@ -81,12 +93,36 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
       toast({ title: "No roll numbers entered", variant: "destructive" });
       return;
     }
+    if (enableSchedule && !scheduledAt) {
+      toast({ title: "Select a scheduled date/time", variant: "destructive" });
+      return;
+    }
     setSaving(true);
+
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Create the batch first
+    const { data: batch, error: batchError } = await supabase
+      .from("assignment_batches")
+      .insert({
+        name: batchName.trim(),
+        created_by: user?.id,
+        scheduled_at: enableSchedule ? scheduledAt : null,
+      })
+      .select("id")
+      .single();
+
+    if (batchError || !batch) {
+      toast({ title: "Failed to create batch", description: batchError?.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+
     const rows = filled.map(roll => ({
       roll_number: roll.trim().toUpperCase(),
       hall_number: hallNumber.trim(),
       created_by: user?.id,
+      batch_id: batch.id,
     }));
 
     const { error } = await supabase.from("hall_assignments").upsert(rows, { onConflict: "roll_number" });
@@ -125,6 +161,15 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
                 className="space-y-4"
               >
                 <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Batch Name</label>
+                  <Input
+                    value={batchName}
+                    onChange={(e) => setBatchName(e.target.value)}
+                    placeholder="e.g. Semester 6 - Maths"
+                    className="h-12 rounded-xl bg-secondary/40 border-border/50 focus-visible:ring-primary/30"
+                  />
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground">Exam Hall Number</label>
                   <Input
                     value={hallNumber}
@@ -145,6 +190,27 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
                     className="h-12 rounded-xl bg-secondary/40 border-border/50 focus-visible:ring-primary/30"
                   />
                 </div>
+
+                {/* Schedule toggle */}
+                <div className="flex items-center justify-between rounded-xl border border-border/50 bg-secondary/20 p-3">
+                  <div className="flex items-center gap-2">
+                    <CalendarClock className="w-4 h-4 text-muted-foreground" />
+                    <Label htmlFor="schedule-toggle" className="text-sm font-medium cursor-pointer">Schedule upload</Label>
+                  </div>
+                  <Switch id="schedule-toggle" checked={enableSchedule} onCheckedChange={setEnableSchedule} />
+                </div>
+                {enableSchedule && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">Scheduled Date & Time</label>
+                    <Input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className="h-12 rounded-xl bg-secondary/40 border-border/50 focus-visible:ring-primary/30"
+                    />
+                  </motion.div>
+                )}
+
                 <Button onClick={handleConfirm} className="w-full h-12 rounded-xl text-sm font-semibold active:scale-[0.98] transition-transform">
                   Confirm
                 </Button>
@@ -157,7 +223,7 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
                 className="space-y-4"
               >
                 <p className="text-sm text-muted-foreground">
-                  Hall: <span className="font-medium text-foreground">{hallNumber}</span> · {rollNumbers.length} rows
+                  <span className="font-medium text-foreground">{batchName}</span> · Hall: <span className="font-medium text-foreground">{hallNumber}</span> · {rollNumbers.length} rows
                 </p>
 
                 <div className="border border-border/50 rounded-xl overflow-hidden">
