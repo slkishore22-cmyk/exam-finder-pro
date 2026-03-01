@@ -32,6 +32,8 @@ const AdminDashboard = () => {
   const [fetching, setFetching] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [copied, setCopied] = useState(false);
+  const appLink = "https://seat-finder-plus.lovable.app";
   const navigate = useNavigate();
   const { toast } = useToast();
 
