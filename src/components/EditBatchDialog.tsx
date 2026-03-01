@@ -132,7 +132,7 @@ const EditBatchDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-0">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl p-0 liquid-glass border-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-xl font-semibold tracking-tight">
             Edit Batch

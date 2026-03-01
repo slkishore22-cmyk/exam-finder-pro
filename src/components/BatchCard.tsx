@@ -81,7 +81,7 @@ const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onR
         </div>
 
         {/* Delete batch */}
-        <div className="px-4 py-3 border-t border-border/50 bg-secondary/10">
+        <div className="px-4 py-3 border-t border-border/20 bg-secondary/5">
           <Button
             variant="destructive"
             size="sm"

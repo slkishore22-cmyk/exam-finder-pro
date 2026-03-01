@@ -179,7 +179,7 @@ const Index = () => {
                 exit={{ opacity: 0 }}
                 className="mt-8"
               >
-                <div className="glass-card p-8 text-center">
+                <div className="liquid-glass p-8 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
