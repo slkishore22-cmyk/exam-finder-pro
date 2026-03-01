@@ -123,7 +123,7 @@ const Index = () => {
                 exit={{ opacity: 0, y: -10 }}
                 className="mt-8"
               >
-                <div className="glass-card p-8 space-y-4">
+                <div className="liquid-glass p-8 space-y-4">
                   <div className="shimmer h-6 w-1/3 mx-auto rounded-lg" />
                   <div className="shimmer h-4 w-2/3 mx-auto rounded-lg" />
                 </div>
