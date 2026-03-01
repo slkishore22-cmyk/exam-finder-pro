@@ -94,17 +94,53 @@
 
 @layer components {
   .glass-card {
-    @apply bg-card/70 backdrop-blur-xl border border-border/50 rounded-2xl;
-    box-shadow: var(--glass-shadow);
+    @apply bg-card/50 backdrop-blur-2xl border border-border/30 rounded-3xl;
+    box-shadow: 
+      var(--glass-shadow),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.03);
   }
 
   .glass-card-elevated {
-    @apply bg-card/80 backdrop-blur-xl border border-border/40 rounded-2xl;
-    box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.1);
+    @apply bg-card/60 backdrop-blur-2xl border border-border/25 rounded-3xl;
+    box-shadow: 
+      0 24px 80px -16px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.04);
+  }
+
+  .liquid-glass {
+    @apply backdrop-blur-3xl rounded-3xl;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.25) 50%,
+      rgba(255, 255, 255, 0.4) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.06),
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .dark .liquid-glass {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.02) 50%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   }
 
   .input-glow:focus {
-    box-shadow: 0 0 0 4px hsl(211 100% 50% / 0.15);
+    box-shadow: 0 0 0 4px hsl(0 0% 9% / 0.1);
   }
 
   .shimmer {
@@ -136,8 +172,8 @@
 
   .gradient-mesh {
     background: 
-      radial-gradient(ellipse at 20% 50%, hsl(211 100% 50% / 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, hsl(211 100% 70% / 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 40% 80%, hsl(220 60% 60% / 0.04) 0%, transparent 50%);
+      radial-gradient(ellipse at 20% 50%, hsl(0 0% 50% / 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(0 0% 60% / 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 40% 80%, hsl(0 0% 40% / 0.03) 0%, transparent 50%);
   }
 }
