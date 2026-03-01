@@ -37,7 +37,7 @@ const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onR
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="border border-border rounded-xl overflow-hidden flex flex-col"
+        className="liquid-glass overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-secondary/30 border-b border-border/50">
