@@ -40,7 +40,7 @@ const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onR
         className="liquid-glass overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-secondary/30 border-b border-border/50">
+        <div className="flex items-center justify-between px-4 py-3 bg-secondary/20 border-b border-border/20">
           <div>
             <h3 className="text-sm font-semibold text-foreground">{name}</h3>
             {scheduledAt && (
