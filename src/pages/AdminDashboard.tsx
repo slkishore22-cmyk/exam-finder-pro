@@ -31,6 +31,7 @@ const AdminDashboard = () => {
   const [batches, setBatches] = useState<GroupedBatch[]>([]);
   const [fetching, setFetching] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const navigate = useNavigate();
   const { toast } = useToast();
 
