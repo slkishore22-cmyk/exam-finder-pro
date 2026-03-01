@@ -143,7 +143,7 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetModal(); onOpenChange(v); }}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-0">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl p-0 liquid-glass border-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-xl font-semibold tracking-tight">
             Add Hall Assignment

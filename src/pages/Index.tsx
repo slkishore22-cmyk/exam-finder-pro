@@ -42,7 +42,7 @@ const Index = () => {
   return (
     <div className="min-h-screen gradient-mesh">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav className="fixed top-0 left-0 right-0 z-50 liquid-glass rounded-none border-0 border-b border-border/20">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-semibold text-lg text-foreground">
             <BookOpen className="w-5 h-5 text-primary" />
@@ -78,7 +78,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-card-elevated p-8 sm:p-10"
+            className="liquid-glass p-8 sm:p-10"
           >
             <div className="space-y-4">
               <div className="relative">
@@ -123,7 +123,7 @@ const Index = () => {
                 exit={{ opacity: 0, y: -10 }}
                 className="mt-8"
               >
-                <div className="glass-card p-8 space-y-4">
+                <div className="liquid-glass p-8 space-y-4">
                   <div className="shimmer h-6 w-1/3 mx-auto rounded-lg" />
                   <div className="shimmer h-4 w-2/3 mx-auto rounded-lg" />
                 </div>
@@ -139,7 +139,7 @@ const Index = () => {
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-8"
               >
-                <div className="glass-card-elevated p-8">
+                <div className="liquid-glass p-8">
                   <div className="flex items-center justify-center mb-6">
                     <motion.div
                       initial={{ scale: 0 }}
@@ -179,7 +179,7 @@ const Index = () => {
                 exit={{ opacity: 0 }}
                 className="mt-8"
               >
-                <div className="glass-card p-8 text-center">
+                <div className="liquid-glass p-8 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}

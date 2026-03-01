@@ -37,10 +37,10 @@ const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onR
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="border border-border rounded-xl overflow-hidden flex flex-col"
+        className="liquid-glass overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-secondary/30 border-b border-border/50">
+        <div className="flex items-center justify-between px-4 py-3 bg-secondary/20 border-b border-border/20">
           <div>
             <h3 className="text-sm font-semibold text-foreground">{name}</h3>
             {scheduledAt && (
@@ -81,7 +81,7 @@ const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onR
         </div>
 
         {/* Delete batch */}
-        <div className="px-4 py-3 border-t border-border/50 bg-secondary/10">
+        <div className="px-4 py-3 border-t border-border/20 bg-secondary/5">
           <Button
             variant="destructive"
             size="sm"

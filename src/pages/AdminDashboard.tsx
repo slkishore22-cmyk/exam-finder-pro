@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, LogOut, RefreshCw } from "lucide-react";
+import { Plus, LogOut, RefreshCw, Sun, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,7 @@ const AdminDashboard = () => {
   const [batches, setBatches] = useState<GroupedBatch[]>([]);
   const [fetching, setFetching] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -104,6 +105,17 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Hall Assignments</h1>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => {
+                document.documentElement.classList.toggle("dark");
+                setDark(d => !d);
+              }}
+            >
+              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </Button>
             <Button variant="outline" size="sm" onClick={fetchData} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} />
               Refresh
