@@ -139,7 +139,7 @@ const Index = () => {
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-8"
               >
-                <div className="glass-card-elevated p-8">
+                <div className="liquid-glass p-8">
                   <div className="flex items-center justify-center mb-6">
                     <motion.div
                       initial={{ scale: 0 }}
