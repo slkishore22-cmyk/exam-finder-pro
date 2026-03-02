@@ -39,11 +39,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) navigate("/admin/login");
+      if (!session) navigate("/admin");
       setLoading(false);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/admin/login");
+      if (!session) navigate("/admin");
       setLoading(false);
     });
     return () => subscription.unsubscribe();
