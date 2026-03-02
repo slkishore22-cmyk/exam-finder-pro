@@ -4,7 +4,7 @@ import { Search, ArrowRight, BookOpen, Hash } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+
 
 interface HallResult {
   roll_number: string;
@@ -43,16 +43,11 @@ const Index = () => {
     <div className="min-h-screen gradient-mesh">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 liquid-glass rounded-none border-0 border-b border-border/20">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-semibold text-lg text-foreground">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-center">
+          <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
             <BookOpen className="w-5 h-5 text-primary" />
             Exam Room Finder
-          </Link>
-          <Link to="/admin/login">
-            <Button variant="ghost" size="sm" className="text-muted-foreground btn-press">
-              Admin
-            </Button>
-          </Link>
+          </div>
         </div>
       </nav>
 

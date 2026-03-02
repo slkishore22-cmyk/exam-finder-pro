@@ -39,14 +39,33 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) navigate("/admin/login");
+      if (!session) navigate("/admin");
       setLoading(false);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/admin/login");
+      if (!session) navigate("/admin");
       setLoading(false);
     });
     return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  // 2-hour inactivity timeout
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut();
+        navigate("/admin");
+      }, 2 * 60 * 60 * 1000);
+    };
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach(e => window.addEventListener(e, resetTimer));
+    resetTimer();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+    };
   }, [navigate]);
 
   const fetchData = useCallback(async () => {
@@ -89,7 +108,7 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/admin/login");
+    navigate("/admin");
   };
 
   if (loading) {
