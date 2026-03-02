@@ -49,6 +49,25 @@ const AdminDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // 2-hour inactivity timeout
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut();
+        navigate("/admin");
+      }, 2 * 60 * 60 * 1000);
+    };
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach(e => window.addEventListener(e, resetTimer));
+    resetTimer();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+    };
+  }, [navigate]);
+
   const fetchData = useCallback(async () => {
     setFetching(true);
     const [batchRes, assignRes] = await Promise.all([
