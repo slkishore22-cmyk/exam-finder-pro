@@ -4,7 +4,7 @@ import { Search, ArrowRight, BookOpen, Hash } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+
 
 interface HallResult {
   roll_number: string;
