@@ -281,7 +281,4 @@ const Index = () => {
   );
 };
 
-// Need Clock import for the not-assigned state
-import { Clock } from "lucide-react";
-
 export default Index;
