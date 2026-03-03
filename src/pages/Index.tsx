@@ -1,20 +1,21 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ArrowRight, BookOpen, Hash } from "lucide-react";
+import { Search, ArrowRight, BookOpen, Hash, MapPin, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-
 interface HallResult {
   roll_number: string;
   hall_number: string;
+  seat_number: string | null;
 }
 
 const Index = () => {
   const [rollNumber, setRollNumber] = useState("");
   const [result, setResult] = useState<HallResult | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [notAssigned, setNotAssigned] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async () => {
@@ -22,21 +23,46 @@ const Index = () => {
     setLoading(true);
     setResult(null);
     setNotFound(false);
+    setNotAssigned(false);
 
-    const { data } = await supabase
-      .from("hall_assignments")
-      .select("roll_number, hall_number")
-      .eq("roll_number", rollNumber.trim().toUpperCase())
+    const rn = rollNumber.trim().toUpperCase();
+
+    // Search new hierarchy_students table
+    const { data } = await (supabase as any)
+      .from("hierarchy_students")
+      .select("roll_number, hall_number, seat_number, is_assigned")
+      .eq("roll_number", rn)
       .maybeSingle();
 
-    setTimeout(() => {
-      if (data) {
-        setResult({ roll_number: data.roll_number, hall_number: data.hall_number });
+    if (data) {
+      if (data.is_assigned) {
+        setResult({
+          roll_number: data.roll_number,
+          hall_number: data.hall_number,
+          seat_number: data.seat_number,
+        });
+      } else {
+        setNotAssigned(true);
+      }
+    } else {
+      // Fallback to legacy hall_assignments table
+      const { data: oldData } = await supabase
+        .from("hall_assignments")
+        .select("roll_number, hall_number")
+        .eq("roll_number", rn)
+        .maybeSingle();
+
+      if (oldData) {
+        setResult({
+          roll_number: oldData.roll_number,
+          hall_number: oldData.hall_number,
+          seat_number: null,
+        });
       } else {
         setNotFound(true);
       }
-      setLoading(false);
-    }, 400);
+    }
+    setLoading(false);
   };
 
   return (
@@ -142,26 +168,82 @@ const Index = () => {
                       transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
                       className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"
                     >
-                      <svg className="w-6 h-6 text-primary success-check" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg
+                        className="w-6 h-6 text-primary success-check"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </motion.div>
                   </div>
                   <p className="text-sm text-muted-foreground mb-1">Roll Number</p>
-                  <p className="text-xl font-semibold text-foreground mb-4">{result.roll_number}</p>
+                  <p className="text-xl font-semibold text-foreground mb-4">
+                    {result.roll_number}
+                  </p>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15, duration: 0.4 }}
+                      className="bg-secondary/50 rounded-xl p-6 text-center"
+                    >
+                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-2">
+                        <Hash className="w-4 h-4" />
+                        <span className="text-xs font-medium">Exam Hall</span>
+                      </div>
+                      <p className="text-3xl font-bold text-foreground">
+                        {result.hall_number}
+                      </p>
+                    </motion.div>
+
+                    {result.seat_number && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25, duration: 0.4 }}
+                        className="bg-secondary/50 rounded-xl p-6 text-center"
+                      >
+                        <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-xs font-medium">Seat Number</span>
+                        </div>
+                        <p className="text-3xl font-bold text-foreground">
+                          {result.seat_number}
+                        </p>
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {notAssigned && !loading && (
+              <motion.div
+                key="notassigned"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-8"
+              >
+                <div className="liquid-glass p-8 text-center">
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15, duration: 0.4 }}
-                    className="bg-secondary/50 rounded-xl p-6 text-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                    className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4"
                   >
-                    <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-2">
-                      <Hash className="w-4 h-4" />
-                      <span className="text-xs font-medium">Exam Hall</span>
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">{result.hall_number}</p>
+                    <Clock className="w-7 h-7 text-yellow-600" />
                   </motion.div>
+                  <p className="text-lg font-medium text-foreground mb-1">
+                    Hall not yet assigned
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Please check back later.
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -183,8 +265,12 @@ const Index = () => {
                   >
                     <Search className="w-7 h-7 text-destructive" />
                   </motion.div>
-                  <p className="text-lg font-medium text-foreground mb-1">No record found</p>
-                  <p className="text-sm text-muted-foreground">Please check your roll number and try again</p>
+                  <p className="text-lg font-medium text-foreground mb-1">
+                    Roll number not found
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Please contact your department.
+                  </p>
                 </div>
               </motion.div>
             )}
