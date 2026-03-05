@@ -32,6 +32,10 @@ const MasterDashboard = () => {
   const [adminPassword, setAdminPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetUsername, setResetUsername] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
