@@ -223,6 +223,9 @@ const MasterDashboard = () => {
             <Button variant="outline" size="sm" onClick={fetchData} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setResetDialogOpen(true)}>
+              <KeyRound className="w-4 h-4 mr-1.5" /> Reset Password
+            </Button>
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" /> Create College Admin
             </Button>
