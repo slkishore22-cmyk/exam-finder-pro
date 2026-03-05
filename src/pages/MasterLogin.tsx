@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Eye, EyeOff, ArrowRight } from "lucide-react";
@@ -10,8 +10,28 @@ const MasterLogin = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if any master admin exists; if not, redirect to setup
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await supabase.functions.invoke("setup-master-admin", {
+          body: { action: "check" },
+        });
+        if (!res.data?.exists) {
+          navigate("/master/setup", { replace: true });
+          return;
+        }
+      } catch {
+        // If check fails, stay on login
+      }
+      setChecking(false);
+    };
+    check();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +102,14 @@ const MasterLogin = () => {
       setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 overflow-hidden relative">
