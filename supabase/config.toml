@@ -1,1 +1,4 @@
 project_id = "kayngycfprnnknbptvic"
+
+[functions.setup-master-admin]
+verify_jwt = false
