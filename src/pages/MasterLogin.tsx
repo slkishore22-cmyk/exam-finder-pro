@@ -10,8 +10,28 @@ const MasterLogin = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if any master admin exists; if not, redirect to setup
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await supabase.functions.invoke("setup-master-admin", {
+          body: { action: "check" },
+        });
+        if (!res.data?.exists) {
+          navigate("/master/setup", { replace: true });
+          return;
+        }
+      } catch {
+        // If check fails, stay on login
+      }
+      setChecking(false);
+    };
+    check();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
