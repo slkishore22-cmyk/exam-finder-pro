@@ -217,7 +217,50 @@ const MasterDashboard = () => {
     }
   };
 
-  if (loading) {
+  const handleCreateCollegeAdminNew = async () => {
+    if (!caCollegeName.trim() || !caUsername.trim() || !caPassword.trim()) {
+      toast({ title: "All fields required", variant: "destructive" });
+      return;
+    }
+    if (caPassword.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    setCaCreating(true);
+    try {
+      const res = await supabase.functions.invoke("manage-college-admins", {
+        body: { action: "create", college_name: caCollegeName.trim(), username: caUsername.trim(), password: caPassword },
+      });
+      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message);
+      toast({ title: "College admin created successfully" });
+      setCaDialogOpen(false);
+      setCaCollegeName("");
+      setCaUsername("");
+      setCaPassword("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCaCreating(false);
+    }
+  };
+
+  const handleToggleCollegeAdmin = async (adminId: string, currentActive: boolean | null) => {
+    setCaTogglingId(adminId);
+    try {
+      const res = await supabase.functions.invoke("manage-college-admins", {
+        body: { action: "toggle", admin_id: adminId, is_active: !currentActive },
+      });
+      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message);
+      setCollegeAdmins(prev => prev.map(a => a.id === adminId ? { ...a, is_active: !currentActive } : a));
+      toast({ title: `College admin ${!currentActive ? "activated" : "deactivated"}` });
+    } catch (err: any) {
+      toast({ title: "Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCaTogglingId(null);
+    }
+  };
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
