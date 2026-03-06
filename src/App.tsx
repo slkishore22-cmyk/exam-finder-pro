@@ -9,6 +9,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import MasterLogin from "./pages/MasterLogin";
 import MasterDashboard from "./pages/MasterDashboard";
 import MasterSetup from "./pages/MasterSetup";
+import CollegeAdminLogin from "./pages/CollegeAdminLogin";
+import CollegeAdminDashboard from "./pages/CollegeAdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +27,8 @@ const App = () => (
           <Route path="/master" element={<MasterLogin />} />
           <Route path="/master/setup" element={<MasterSetup />} />
           <Route path="/master/dashboard" element={<MasterDashboard />} />
+          <Route path="/college-admin" element={<CollegeAdminLogin />} />
+          <Route path="/college-admin/dashboard" element={<CollegeAdminDashboard />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
