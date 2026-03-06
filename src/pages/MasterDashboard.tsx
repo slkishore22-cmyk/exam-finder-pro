@@ -44,6 +44,14 @@ const MasterDashboard = () => {
   const [resetUsername, setResetUsername] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
+  // College admin management
+  const [collegeAdmins, setCollegeAdmins] = useState<CollegeAdmin[]>([]);
+  const [caDialogOpen, setCaDialogOpen] = useState(false);
+  const [caCollegeName, setCaCollegeName] = useState("");
+  const [caUsername, setCaUsername] = useState("");
+  const [caPassword, setCaPassword] = useState("");
+  const [caCreating, setCaCreating] = useState(false);
+  const [caTogglingId, setCaTogglingId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
