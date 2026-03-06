@@ -20,6 +20,14 @@ interface College {
   created_at: string | null;
 }
 
+interface CollegeAdmin {
+  id: string;
+  college_name: string;
+  username: string;
+  is_active: boolean | null;
+  created_at: string | null;
+}
+
 const MasterDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [colleges, setColleges] = useState<College[]>([]);
