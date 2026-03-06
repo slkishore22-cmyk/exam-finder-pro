@@ -70,6 +70,44 @@ export type Database = {
         }
         Relationships: []
       }
+      college_admins: {
+        Row: {
+          college_name: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          college_name: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          college_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "college_admins_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "hierarchy_admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       colleges: {
         Row: {
           college_name: string
