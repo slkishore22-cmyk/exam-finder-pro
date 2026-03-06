@@ -408,6 +408,35 @@ const MasterDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create College Super Admin Dialog */}
+      <Dialog open={caDialogOpen} onOpenChange={setCaDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create College Super Admin</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium text-foreground">College Name</label>
+              <Input value={caCollegeName} onChange={e => setCaCollegeName(e.target.value)} placeholder="e.g. ABC Engineering College" className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Username</label>
+              <Input value={caUsername} onChange={e => setCaUsername(e.target.value)} placeholder="e.g. abc_college" className="mt-1" autoComplete="off" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Password</label>
+              <Input type="password" value={caPassword} onChange={e => setCaPassword(e.target.value)} placeholder="Min 6 characters" className="mt-1" autoComplete="off" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCaDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateCollegeAdminNew} disabled={caCreating}>
+              {caCreating ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
