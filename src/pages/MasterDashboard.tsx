@@ -297,28 +297,44 @@ const MasterDashboard = () => {
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
               <LogOut className="w-4 h-4 mr-1.5" /> Sign out
             </Button>
+            </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <div className="liquid-glass p-6 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary" />
+        {/* Colleges list */}
+        <div className="liquid-glass p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Colleges</h2>
+          {colleges.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No colleges yet. Click "Create College Admin" to add one.</p>
+          ) : (
+            <div className="space-y-3">
+              {colleges.map(c => (
+                <div key={c.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/50">
+                  <div>
+                    <p className="font-medium text-foreground">{c.college_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Created {c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${c.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
+                      {c.is_active ? "Active" : "Inactive"}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={togglingId === c.id}
+                      onClick={() => handleToggleCollege(c.id, c.is_active)}
+                    >
+                      {c.is_active ? <ToggleRight className="w-4 h-4 mr-1.5" /> : <ToggleLeft className="w-4 h-4 mr-1.5" />}
+                      {c.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Colleges</p>
-              <p className="text-3xl font-bold text-foreground">{colleges.length}</p>
-            </div>
-          </div>
-          <div className="liquid-glass p-6 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Students</p>
-              <p className="text-3xl font-bold text-foreground">{totalStudents}</p>
-         </div>
+          )}
+        </div>
 
         {/* College Super Admins list */}
         <div className="liquid-glass p-6 mt-6">
