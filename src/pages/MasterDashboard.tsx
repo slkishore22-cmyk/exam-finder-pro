@@ -232,9 +232,6 @@ const MasterDashboard = () => {
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" /> Create College Admin
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setCaDialogOpen(true)}>
-              <UserPlus className="w-4 h-4 mr-1.5" /> Create College Super Admin
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
               <LogOut className="w-4 h-4 mr-1.5" /> Sign out
             </Button>
@@ -291,33 +288,6 @@ const MasterDashboard = () => {
           )}
         </div>
 
-        {/* College Super Admins list */}
-        <div className="liquid-glass p-6 mt-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">College Super Admins</h2>
-          {collegeAdmins.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No college super admins yet. Click "Create College Super Admin" to add one.</p>
-          ) : (
-            <div className="space-y-3">
-              {collegeAdmins.map(a => (
-                <div key={a.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/50">
-                  <div>
-                    <p className="font-medium text-foreground">{a.college_name}</p>
-                    <p className="text-xs text-muted-foreground">Username: {a.username} · Created {a.created_at ? new Date(a.created_at).toLocaleDateString() : "—"}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${a.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
-                      {a.is_active ? "Active" : "Inactive"}
-                    </span>
-                    <Button variant="outline" size="sm" disabled={caTogglingId === a.id} onClick={() => handleToggleCollegeAdmin(a.id, a.is_active)}>
-                      {a.is_active ? <ToggleRight className="w-4 h-4 mr-1.5" /> : <ToggleLeft className="w-4 h-4 mr-1.5" />}
-                      {a.is_active ? "Deactivate" : "Activate"}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Create College Admin Dialog */}
@@ -371,32 +341,6 @@ const MasterDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Create College Super Admin Dialog */}
-      <Dialog open={caDialogOpen} onOpenChange={setCaDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create College Super Admin</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-sm font-medium text-foreground">College Name</label>
-              <Input value={caCollegeName} onChange={e => setCaCollegeName(e.target.value)} placeholder="e.g. ABC Engineering College" className="mt-1" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Username</label>
-              <Input value={caUsername} onChange={e => setCaUsername(e.target.value)} placeholder="e.g. abc_college" className="mt-1" autoComplete="off" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Password</label>
-              <Input type="password" value={caPassword} onChange={e => setCaPassword(e.target.value)} placeholder="Min 6 characters" className="mt-1" autoComplete="off" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCaDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateCollegeAdminNew} disabled={caCreating}>
-              {caCreating ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
