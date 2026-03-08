@@ -13,7 +13,7 @@ interface CachedResult {
 
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MEMORY_REFRESH_MS = 30 * 60 * 1000; // 30 minutes
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 // ── Request deduplication ──
@@ -131,22 +131,22 @@ export function useHallCache() {
     const roll = rollNumber.trim().toUpperCase();
     if (!roll) return { result: null, source: null };
 
-    // Rate limit check
-    if (!checkRateLimit()) {
-      return { result: null, source: null, rateLimited: true };
-    }
-
-    // Level 1: localStorage
+    // Level 1: localStorage (no rate limit count)
     const local = getLocalCache(roll);
     if (local) {
       return { result: { roll_number: roll, hall_number: local.hall_number }, source: "local" };
     }
 
-    // Level 2: Memory cache
+    // Level 2: Memory cache (no rate limit count)
     const memHit = memoryCache.current.get(roll);
     if (memHit) {
       setLocalCache(roll, memHit.hall_number);
       return { result: memHit, source: "memory" };
+    }
+
+    // Only count as rate-limited request when hitting the database (new roll number)
+    if (!checkRateLimit()) {
+      return { result: null, source: null, rateLimited: true };
     }
 
     // Level 3: Database (with dedup)
