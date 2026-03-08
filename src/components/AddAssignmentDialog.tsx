@@ -101,6 +101,22 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
 
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Get admin's department_id and college_id
+    let departmentId: string | null = null;
+    let collegeId: string | null = null;
+    if (user) {
+      const { data: adminInfo } = await supabase
+        .from("hierarchy_admins")
+        .select("department_id, college_id")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+      if (adminInfo) {
+        departmentId = adminInfo.department_id;
+        collegeId = adminInfo.college_id;
+      }
+    }
+
     // Create the batch first
     const { data: batch, error: batchError } = await supabase
       .from("assignment_batches")
@@ -108,7 +124,9 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
         name: batchName.trim(),
         created_by: user?.id,
         scheduled_at: enableSchedule ? scheduledAt : null,
-      })
+        department_id: departmentId,
+        college_id: collegeId,
+      } as any)
       .select("id")
       .single();
 
@@ -123,7 +141,9 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
       hall_number: hallNumber.trim(),
       created_by: user?.id,
       batch_id: batch.id,
-    }));
+      department_id: departmentId,
+      college_id: collegeId,
+    } as any));
 
     const { error } = await supabase.from("hall_assignments").upsert(rows, { onConflict: "roll_number" });
 

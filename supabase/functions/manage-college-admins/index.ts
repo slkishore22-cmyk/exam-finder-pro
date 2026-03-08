@@ -87,23 +87,13 @@ Deno.serve(async (req) => {
           .eq("college_id", collegeId)
           .eq("is_active", true);
 
-        // Get roll numbers for this college from hierarchy_students
-        const { data: students } = await supabaseAdmin
-          .from("hierarchy_students")
-          .select("roll_number")
+        // Count students directly from hall_assignments filtered by college_id
+        const { count: studentCount } = await supabaseAdmin
+          .from("hall_assignments")
+          .select("id", { count: "exact", head: true })
           .eq("college_id", collegeId);
 
-        const rollNumbers = (students || []).map(s => s.roll_number);
-        let studentCount = 0;
-        if (rollNumbers.length > 0) {
-          const { count } = await supabaseAdmin
-            .from("hall_assignments")
-            .select("id", { count: "exact", head: true })
-            .in("roll_number", rollNumbers);
-          studentCount = count || 0;
-        }
-
-        return json({ total_departments: (depts || []).length, total_students: studentCount });
+        return json({ total_departments: (depts || []).length, total_students: studentCount || 0 });
       }
 
       // === CREATE DEPT ADMIN ===

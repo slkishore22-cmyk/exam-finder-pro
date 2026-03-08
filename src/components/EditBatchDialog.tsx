@@ -82,6 +82,23 @@ const EditBatchDialog = ({
       return;
     }
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Get admin's department_id and college_id
+    let departmentId: string | null = null;
+    let collegeId: string | null = null;
+    if (user) {
+      const { data: adminInfo } = await supabase
+        .from("hierarchy_admins")
+        .select("department_id, college_id")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+      if (adminInfo) {
+        departmentId = adminInfo.department_id;
+        collegeId = adminInfo.college_id;
+      }
+    }
+
     const { data, error } = await supabase
       .from("hall_assignments")
       .insert({
@@ -89,7 +106,9 @@ const EditBatchDialog = ({
         hall_number: newHall.trim(),
         batch_id: batchId,
         created_by: user?.id,
-      })
+        department_id: departmentId,
+        college_id: collegeId,
+      } as any)
       .select("id, roll_number, hall_number")
       .single();
 
