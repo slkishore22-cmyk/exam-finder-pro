@@ -401,34 +401,69 @@ const MasterDashboard = () => {
       </Dialog>
 
       {/* Reset Count Dialog */}
-      <AlertDialog open={resetCountOpen} onOpenChange={setResetCountOpen}>
+      <AlertDialog
+        open={resetCountOpen}
+        onOpenChange={(open) => {
+          setResetCountOpen(open);
+          if (!open) {
+            setResetMode("all");
+            setResetCountTarget("");
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reset Permanent Student Count</AlertDialogTitle>
+            <AlertDialogTitle>Reset Student Count</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to reset the count? This cannot be undone.
+              Are you sure you want to reset the student count? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
-            <label className="text-sm font-medium text-foreground">Reset for</label>
-            <Select value={resetCountTarget} onValueChange={setResetCountTarget}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Colleges</SelectItem>
-                {colleges.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.college_name} ({permanentByCollege[c.id] || 0})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="space-y-2 py-3">
+            <Button
+              type="button"
+              variant={resetMode === "all" ? "default" : "outline"}
+              className="w-full justify-start"
+              onClick={() => {
+                setResetMode("all");
+                setResetCountTarget("");
+              }}
+            >
+              Reset All Colleges
+            </Button>
+
+            <Button
+              type="button"
+              variant={resetMode === "specific" ? "default" : "outline"}
+              className="w-full justify-start"
+              onClick={() => setResetMode("specific")}
+            >
+              Reset Specific College
+            </Button>
+
+            {resetMode === "specific" && (
+              <div>
+                <label className="text-sm font-medium text-foreground">Select college</label>
+                <Select value={resetCountTarget} onValueChange={setResetCountTarget}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Choose a college" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colleges.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.college_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleResetCount} disabled={resettingCount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {resettingCount ? <div className="w-4 h-4 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" /> : "Reset Count"}
+            <AlertDialogAction onClick={handleResetCount} disabled={resettingCount || (resetMode === "specific" && !resetCountTarget)}>
+              {resettingCount ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : "Confirm Reset"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
