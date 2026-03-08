@@ -108,18 +108,6 @@ const CollegeAdminDashboard = () => {
     }
   };
 
-  const fetchPermanentCount = async () => {
-    // College admin doesn't have Supabase Auth session, so fetch via edge function
-    if (!adminId) return;
-    try {
-      const { data, error } = await supabase.functions.invoke("manage-college-admins", {
-        body: { action: "college_permanent_count", admin_id: adminId },
-      });
-      if (!error && data && !data.error) {
-        setPermanentStudents(data.total || 0);
-      }
-    } catch { /* ignore */ }
-  };
 
   useEffect(() => {
     if (adminId) {
