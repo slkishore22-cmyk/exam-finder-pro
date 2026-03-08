@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound, GraduationCap, UserCheck } from "lucide-react";
+import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Shield, GraduationCap, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,10 +53,6 @@ const MasterDashboard = () => {
   const [adminPassword, setAdminPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [resetUsername, setResetUsername] = useState("");
-  const [resetPassword, setResetPassword] = useState("");
-  const [resetting, setResetting] = useState(false);
   const [permanentTotal, setPermanentTotal] = useState(0);
   const [resetCountOpen, setResetCountOpen] = useState(false);
   const [resetMode, setResetMode] = useState<"all" | "specific">("all");
@@ -227,25 +223,6 @@ const MasterDashboard = () => {
     navigate("/master");
   };
 
-  const handleResetPassword = async () => {
-    if (!resetUsername.trim() || !resetPassword.trim()) {
-      toast({ title: "All fields required", variant: "destructive" }); return;
-    }
-    if (resetPassword.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return;
-    }
-    setResetting(true);
-    try {
-      const res = await supabase.functions.invoke("reset-admin-password", {
-        body: { username: resetUsername.trim(), new_password: resetPassword },
-      });
-      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message || "Failed");
-      toast({ title: "Password reset successfully", description: res.data?.message });
-      setResetDialogOpen(false); setResetUsername(""); setResetPassword("");
-    } catch (err: any) {
-      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
-    } finally { setResetting(false); }
-  };
 
   if (loading) {
     return (
@@ -269,9 +246,6 @@ const MasterDashboard = () => {
             </Button>
             <Button variant="outline" size="sm" onClick={() => fetchData()} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} /> Refresh
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setResetDialogOpen(true)}>
-              <KeyRound className="w-4 h-4 mr-1.5" /> Reset Password
             </Button>
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" /> Create College Admin
@@ -389,29 +363,6 @@ const MasterDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Reset Password Dialog */}
-      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Reset Admin Password</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-sm font-medium text-foreground">Admin Username</label>
-              <Input value={resetUsername} onChange={e => setResetUsername(e.target.value)} placeholder="Enter the admin's username" className="mt-1" autoComplete="off" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">New Password</label>
-              <Input type="password" value={resetPassword} onChange={e => setResetPassword(e.target.value)} placeholder="Min 6 characters" className="mt-1" autoComplete="off" />
-            </div>
-            <p className="text-xs text-muted-foreground">This will reset the password for any admin (college, department, or staff) and unlock their account if locked.</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleResetPassword} disabled={resetting}>
-              {resetting ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : "Reset Password"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Reset Count Dialog */}
       <AlertDialog
