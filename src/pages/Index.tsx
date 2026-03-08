@@ -1,42 +1,91 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ArrowRight, BookOpen, Hash } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Search, ArrowRight, BookOpen, Hash, WifiOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { useHallCache, type SearchSource } from "@/hooks/useHallCache";
 
 interface HallResult {
   roll_number: string;
   hall_number: string;
 }
 
+type PageState = "idle" | "loading" | "found" | "not_found" | "rate_limited" | "error";
+
+const DEBOUNCE_MS = 300;
+
 const Index = () => {
   const [rollNumber, setRollNumber] = useState("");
   const [result, setResult] = useState<HallResult | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [pageState, setPageState] = useState<PageState>("idle");
+  const [source, setSource] = useState<SearchSource>(null);
+  const [offline, setOffline] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const { search, cacheReady, cacheProgress } = useHallCache();
 
-  const handleSearch = async () => {
-    if (!rollNumber.trim()) return;
-    setLoading(true);
+  // Clean up debounce on unmount
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  const handleSearch = useCallback(async () => {
+    const roll = rollNumber.trim().toUpperCase();
+    if (!roll) return;
+
+    setPageState("loading");
     setResult(null);
-    setNotFound(false);
+    setOffline(false);
 
-    const { data } = await supabase
-      .from("hall_assignments")
-      .select("roll_number, hall_number")
-      .eq("roll_number", rollNumber.trim().toUpperCase())
-      .maybeSingle();
+    try {
+      const res = await search(roll);
 
-    setTimeout(() => {
-      if (data) {
-        setResult({ roll_number: data.roll_number, hall_number: data.hall_number });
-      } else {
-        setNotFound(true);
+      if (res.rateLimited) {
+        setPageState("rate_limited");
+        return;
       }
-      setLoading(false);
-    }, 400);
+
+      if (res.offline && !res.result) {
+        setPageState("error");
+        setOffline(true);
+        return;
+      }
+
+      if (res.result) {
+        setResult(res.result);
+        setSource(res.source);
+        setOffline(!!res.offline);
+        setPageState("found");
+      } else {
+        setPageState("not_found");
+      }
+    } catch {
+      setPageState("error");
+    }
+  }, [rollNumber, search]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      handleSearch();
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    setRollNumber(val);
+
+    // Reset state when cleared
+    if (!val.trim()) {
+      setPageState("idle");
+      setResult(null);
+      return;
+    }
+
+    // Debounced auto-search
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (val.trim().length >= 3) handleSearch();
+    }, DEBOUNCE_MS);
   };
 
   return (
@@ -68,6 +117,18 @@ const Index = () => {
             </p>
           </motion.div>
 
+          {/* Cache preload progress */}
+          {!cacheReady && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-6"
+            >
+              <p className="text-xs text-muted-foreground mb-2">Preparing for fast search…</p>
+              <Progress value={cacheProgress} className="h-1.5 max-w-xs mx-auto" />
+            </motion.div>
+          )}
+
           {/* Search Card */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -82,19 +143,19 @@ const Index = () => {
                   type="text"
                   placeholder="Enter your roll number"
                   value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   className="h-14 pl-12 pr-4 text-lg rounded-xl bg-secondary/60 border-border/60 input-glow placeholder:text-muted-foreground/60"
                 />
               </div>
 
               <Button
                 onClick={handleSearch}
-                disabled={!rollNumber.trim() || loading}
+                disabled={!rollNumber.trim() || pageState === "loading"}
                 className="w-full h-14 text-base font-medium rounded-xl btn-press"
                 size="lg"
               >
-                {loading ? (
+                {pageState === "loading" ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     Searching...
@@ -110,7 +171,7 @@ const Index = () => {
 
           {/* Results */}
           <AnimatePresence mode="wait">
-            {loading && (
+            {pageState === "loading" && (
               <motion.div
                 key="loading"
                 initial={{ opacity: 0, y: 20 }}
@@ -125,7 +186,7 @@ const Index = () => {
               </motion.div>
             )}
 
-            {result && !loading && (
+            {pageState === "found" && result && (
               <motion.div
                 key="result"
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -135,6 +196,15 @@ const Index = () => {
                 className="mt-8"
               >
                 <div className="liquid-glass p-8">
+                  {/* Offline badge */}
+                  {offline && (
+                    <div className="flex justify-center mb-4">
+                      <Badge variant="secondary" className="gap-1.5 text-xs">
+                        <WifiOff className="w-3 h-3" /> Showing saved result
+                      </Badge>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-center mb-6">
                     <motion.div
                       initial={{ scale: 0 }}
@@ -162,11 +232,17 @@ const Index = () => {
                     </div>
                     <p className="text-3xl font-bold text-foreground">{result.hall_number}</p>
                   </motion.div>
+
+                  {source && !offline && (
+                    <p className="text-[10px] text-muted-foreground/50 mt-4">
+                      {source === "local" ? "⚡ Instant (cached)" : source === "memory" ? "⚡ Instant" : "✓ Live"}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             )}
 
-            {notFound && !loading && (
+            {pageState === "not_found" && (
               <motion.div
                 key="notfound"
                 initial={{ opacity: 0, y: 20 }}
@@ -183,8 +259,45 @@ const Index = () => {
                   >
                     <Search className="w-7 h-7 text-destructive" />
                   </motion.div>
-                  <p className="text-lg font-medium text-foreground mb-1">No record found</p>
-                  <p className="text-sm text-muted-foreground">Please check your roll number and try again</p>
+                  <p className="text-lg font-medium text-foreground mb-1">Roll number not found</p>
+                  <p className="text-sm text-muted-foreground">Please contact your department.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {pageState === "rate_limited" && (
+              <motion.div
+                key="ratelimit"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-8"
+              >
+                <div className="liquid-glass p-8 text-center">
+                  <p className="text-lg font-medium text-foreground mb-1">Too many searches</p>
+                  <p className="text-sm text-muted-foreground">Please wait a moment and try again.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {pageState === "error" && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-8"
+              >
+                <div className="liquid-glass p-8 text-center">
+                  <p className="text-lg font-medium text-foreground mb-2">Something went wrong</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {offline
+                      ? "Service temporarily unavailable. Please try again in a moment."
+                      : "Please try again."}
+                  </p>
+                  <Button variant="outline" onClick={handleSearch} className="gap-2">
+                    <RefreshCw className="w-4 h-4" /> Retry
+                  </Button>
                 </div>
               </motion.div>
             )}
