@@ -299,7 +299,7 @@ const MasterDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">College Super Admins</p>
-              <p className="text-3xl font-bold text-foreground">{totalCollegeAdmins}</p>
+              <p className="text-3xl font-bold text-foreground flex items-center gap-2">{totalCollegeAdmins}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
