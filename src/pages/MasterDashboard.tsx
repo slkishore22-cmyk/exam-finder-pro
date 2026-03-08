@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound, GraduationCap, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,8 +100,10 @@ const MasterDashboard = () => {
     return () => { clearTimeout(timer); events.forEach(e => window.removeEventListener(e, resetTimer)); };
   }, [navigate]);
 
-  const fetchData = useCallback(async () => {
-    setFetching(true);
+  const hasFetchedOnce = useRef(false);
+
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setFetching(true);
     try {
       const [collegeRes, statsRes, countRes] = await Promise.all([
         supabase.from("colleges").select("*").order("created_at", { ascending: false }),
@@ -109,9 +111,10 @@ const MasterDashboard = () => {
         supabase.functions.invoke("master-student-count", { body: { action: "summary" } }),
       ]);
 
-      if (!collegeRes.error) setColleges(collegeRes.data || []);
+      // Only update state if data arrived successfully — never clear existing data
+      if (!collegeRes.error && collegeRes.data) setColleges(collegeRes.data);
 
-      if (!statsRes.error && statsRes.data) {
+      if (!statsRes.error && statsRes.data && !statsRes.data.error) {
         setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
         setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
         setDetails(statsRes.data.details || []);
@@ -120,17 +123,48 @@ const MasterDashboard = () => {
       if (!countRes.error && countRes.data && !countRes.data.error) {
         setPermanentTotal(countRes.data.total_students || 0);
       }
+
+      hasFetchedOnce.current = true;
+
+      // If ALL calls failed, show error but keep old data
+      const allFailed = !!collegeRes.error && (!!statsRes.error || statsRes.data?.error) && (!!countRes.error || countRes.data?.error);
+      if (allFailed && hasFetchedOnce.current) {
+        toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
+      }
+    } catch {
+      if (hasFetchedOnce.current) {
+        toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
+      }
     } finally {
-      setFetching(false);
+      if (!silent) setFetching(false);
     }
-  }, []);
+  }, [toast]);
+
+  // Initial fetch
+  useEffect(() => { if (!loading) fetchData(); }, [loading, fetchData]);
+
+  // Auto-refresh every 5 minutes (silent)
+  useEffect(() => {
+    if (loading) return;
+    const id = setInterval(() => fetchData(true), 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [loading, fetchData]);
+
+  // Realtime subscription for permanent_counts changes
+  useEffect(() => {
+    if (loading) return;
+    const channel = supabase
+      .channel("master-student-count-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "permanent_counts" }, () => fetchData(true))
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loading, fetchData]);
 
   const handleResetCount = async () => {
     if (resetMode === "specific" && !resetCountTarget) {
       toast({ title: "Select a college", variant: "destructive" });
       return;
     }
-
     setResettingCount(true);
     try {
       const res = await supabase.functions.invoke("master-student-count", {
@@ -139,9 +173,7 @@ const MasterDashboard = () => {
             ? { action: "reset", mode: "all" }
             : { action: "reset", mode: "specific", college_id: resetCountTarget },
       });
-
       if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message || "Reset failed");
-
       toast({ title: "Count reset successfully" });
       setResetCountOpen(false);
       setResetMode("all");
@@ -153,25 +185,6 @@ const MasterDashboard = () => {
       setResettingCount(false);
     }
   };
-
-  useEffect(() => { if (!loading) fetchData(); }, [loading, fetchData]);
-
-  useEffect(() => {
-    if (loading) return;
-
-    const channel = supabase
-      .channel("master-student-count-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "permanent_counts" },
-        () => fetchData(),
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [loading, fetchData]);
 
   const handleCreateCollegeAdmin = async () => {
     if (!collegeName.trim() || !adminUsername.trim() || !adminPassword.trim()) {
@@ -254,7 +267,7 @@ const MasterDashboard = () => {
             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => { document.documentElement.classList.toggle("dark"); setDark(d => !d); }}>
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={fetching}>
+            <Button variant="outline" size="sm" onClick={() => fetchData()} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
             <Button size="sm" variant="outline" onClick={() => setResetDialogOpen(true)}>
@@ -277,7 +290,7 @@ const MasterDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Colleges</p>
-              <p className="text-3xl font-bold text-foreground">{colleges.length}</p>
+              <p className="text-3xl font-bold text-foreground flex items-center gap-2">{colleges.length}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
@@ -286,7 +299,7 @@ const MasterDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">College Super Admins</p>
-              <p className="text-3xl font-bold text-foreground">{totalCollegeAdmins}</p>
+              <p className="text-3xl font-bold text-foreground flex items-center gap-2">{totalCollegeAdmins}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
@@ -295,7 +308,7 @@ const MasterDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Department Admins</p>
-              <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
+              <p className="text-3xl font-bold text-foreground flex items-center gap-2">{totalDeptAdmins}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
             </div>
           </div>
           <div className="liquid-glass p-6">
@@ -306,7 +319,7 @@ const MasterDashboard = () => {
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Total Students</p>
                 <div className="mt-1 flex flex-wrap items-center gap-3">
-                  <p className="text-3xl font-bold text-foreground">{permanentTotal}</p>
+                  <p className="text-3xl font-bold text-foreground flex items-center gap-2">{permanentTotal}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
                   <Button size="sm" variant="outline" onClick={() => setResetCountOpen(true)}>
                     Reset Count
                   </Button>
