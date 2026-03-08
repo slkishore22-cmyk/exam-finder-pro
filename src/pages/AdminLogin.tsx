@@ -70,7 +70,7 @@ const AdminLogin = () => {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="email"
-                placeholder="Email address"
+                placeholder="Email or Username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-12 pl-11 rounded-xl bg-secondary/60 border-border/60 input-glow"
