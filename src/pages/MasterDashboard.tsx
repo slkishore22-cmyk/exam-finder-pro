@@ -102,57 +102,50 @@ const MasterDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [collegeRes, statsRes, permRes] = await Promise.all([
-      supabase.from("colleges").select("*").order("created_at", { ascending: false }),
-      supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
-      supabase.from("permanent_counts").select("college_id, total_students"),
-    ]);
-    if (!collegeRes.error) setColleges(collegeRes.data || []);
-    if (!statsRes.error && statsRes.data) {
-      setTotalStudents(statsRes.data.total_students || 0);
-      setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
-      setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
-      setDetails(statsRes.data.details || []);
-    }
-    // Permanent counts
-    if (!permRes.error && permRes.data) {
-      const byCollege: Record<string, number> = {};
-      let total = 0;
-      for (const row of permRes.data) {
-        byCollege[row.college_id] = row.total_students || 0;
-        total += row.total_students || 0;
+    try {
+      const [collegeRes, statsRes, countRes] = await Promise.all([
+        supabase.from("colleges").select("*").order("created_at", { ascending: false }),
+        supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
+        supabase.functions.invoke("master-student-count", { body: { action: "summary" } }),
+      ]);
+
+      if (!collegeRes.error) setColleges(collegeRes.data || []);
+
+      if (!statsRes.error && statsRes.data) {
+        setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
+        setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
+        setDetails(statsRes.data.details || []);
       }
-      setPermanentTotal(total);
-      setPermanentByCollege(byCollege);
+
+      if (!countRes.error && countRes.data && !countRes.data.error) {
+        setPermanentTotal(countRes.data.total_students || 0);
+      }
+    } finally {
+      setFetching(false);
     }
-    setFetching(false);
   }, []);
 
   const handleResetCount = async () => {
+    if (resetMode === "specific" && !resetCountTarget) {
+      toast({ title: "Select a college", variant: "destructive" });
+      return;
+    }
+
     setResettingCount(true);
     try {
-      if (resetCountTarget === "all") {
-        const { error } = await supabase
-          .from("permanent_counts")
-          .update({ total_students: 0, last_reset_at: new Date().toISOString() } as any)
-          .neq("id", "00000000-0000-0000-0000-000000000000"); // update all
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("permanent_counts")
-          .update({ total_students: 0, last_reset_at: new Date().toISOString() } as any)
-          .eq("college_id", resetCountTarget);
-        if (error) throw error;
-      }
-      // Log activity
-      const collegeName_ = resetCountTarget === "all"
-        ? "all colleges"
-        : colleges.find(c => c.id === resetCountTarget)?.college_name || resetCountTarget;
-      await supabase.functions.invoke("manage-staff", {
-        body: { action: "log_activity", log_action: "reset_permanent_count", details: `Count reset for ${collegeName_} by master admin at ${new Date().toLocaleString()}` },
+      const res = await supabase.functions.invoke("master-student-count", {
+        body:
+          resetMode === "all"
+            ? { action: "reset", mode: "all" }
+            : { action: "reset", mode: "specific", college_id: resetCountTarget },
       });
+
+      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message || "Reset failed");
+
       toast({ title: "Count reset successfully" });
       setResetCountOpen(false);
+      setResetMode("all");
+      setResetCountTarget("");
       fetchData();
     } catch (err: any) {
       toast({ title: "Reset failed", description: err.message, variant: "destructive" });
@@ -162,6 +155,23 @@ const MasterDashboard = () => {
   };
 
   useEffect(() => { if (!loading) fetchData(); }, [loading, fetchData]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const channel = supabase
+      .channel("master-student-count-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "permanent_counts" },
+        () => fetchData(),
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loading, fetchData]);
 
   const handleCreateCollegeAdmin = async () => {
     if (!collegeName.trim() || !adminUsername.trim() || !adminPassword.trim()) {
