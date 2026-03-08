@@ -339,9 +339,6 @@ const CollegeAdminDashboard = () => {
           </div>
         )}
       </div>
-
-
-      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
 };
