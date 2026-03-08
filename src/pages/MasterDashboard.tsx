@@ -103,9 +103,10 @@ const MasterDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [collegeRes, statsRes] = await Promise.all([
+    const [collegeRes, statsRes, permRes] = await Promise.all([
       supabase.from("colleges").select("*").order("created_at", { ascending: false }),
       supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
+      supabase.from("permanent_counts").select("college_id, total_students"),
     ]);
     if (!collegeRes.error) setColleges(collegeRes.data || []);
     if (!statsRes.error && statsRes.data) {
@@ -114,8 +115,52 @@ const MasterDashboard = () => {
       setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
       setDetails(statsRes.data.details || []);
     }
+    // Permanent counts
+    if (!permRes.error && permRes.data) {
+      const byCollege: Record<string, number> = {};
+      let total = 0;
+      for (const row of permRes.data) {
+        byCollege[row.college_id] = row.total_students || 0;
+        total += row.total_students || 0;
+      }
+      setPermanentTotal(total);
+      setPermanentByCollege(byCollege);
+    }
     setFetching(false);
   }, []);
+
+  const handleResetCount = async () => {
+    setResettingCount(true);
+    try {
+      if (resetCountTarget === "all") {
+        const { error } = await supabase
+          .from("permanent_counts")
+          .update({ total_students: 0, last_reset_at: new Date().toISOString() } as any)
+          .neq("id", "00000000-0000-0000-0000-000000000000"); // update all
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("permanent_counts")
+          .update({ total_students: 0, last_reset_at: new Date().toISOString() } as any)
+          .eq("college_id", resetCountTarget);
+        if (error) throw error;
+      }
+      // Log activity
+      const collegeName_ = resetCountTarget === "all"
+        ? "all colleges"
+        : colleges.find(c => c.id === resetCountTarget)?.college_name || resetCountTarget;
+      await supabase.functions.invoke("manage-staff", {
+        body: { action: "log_activity", log_action: "reset_permanent_count", details: `Count reset for ${collegeName_} by master admin at ${new Date().toLocaleString()}` },
+      });
+      toast({ title: "Count reset successfully" });
+      setResetCountOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingCount(false);
+    }
+  };
 
   useEffect(() => { if (!loading) fetchData(); }, [loading, fetchData]);
 
