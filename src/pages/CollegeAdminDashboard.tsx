@@ -182,9 +182,6 @@ const CollegeAdminDashboard = () => {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{collegeName} - Super Admin</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setChangePasswordOpen(true)}>
-              <KeyRound className="w-4 h-4 mr-1.5" /> Password
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
               <LogOut className="w-4 h-4 mr-1.5" /> Sign out
             </Button>
