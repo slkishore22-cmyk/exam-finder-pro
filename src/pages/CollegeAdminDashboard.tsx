@@ -97,7 +97,7 @@ const CollegeAdminDashboard = () => {
 
   useEffect(() => {
     if (adminId) {
-      Promise.all([fetchDeptAdmins(), fetchStats(), fetchSubordinates()]).finally(() => setLoading(false));
+      Promise.all([fetchDeptAdmins(), fetchStats()]).finally(() => setLoading(false));
     }
   }, [adminId]);
 
