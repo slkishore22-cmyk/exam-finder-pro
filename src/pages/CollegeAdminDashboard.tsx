@@ -323,7 +323,7 @@ const CollegeAdminDashboard = () => {
         </div>
 
         {/* All Subordinates (dept admins + staff) with password reset */}
-        {allSubordinates.length > 0 && (
+        {allSubordinates.length > 0 ? (
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
             <div className="liquid-glass overflow-hidden">
