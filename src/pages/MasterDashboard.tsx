@@ -32,6 +32,7 @@ const MasterDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [colleges, setColleges] = useState<College[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [totalDeptAdmins, setTotalDeptAdmins] = useState(0);
   const [fetching, setFetching] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -93,14 +94,17 @@ const MasterDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [collegeRes, studentRes, caRes] = await Promise.all([
+    const [collegeRes, caRes, statsRes] = await Promise.all([
       supabase.from("colleges").select("*").order("created_at", { ascending: false }),
-      supabase.from("hierarchy_students").select("id", { count: "exact", head: true }),
       supabase.functions.invoke("manage-college-admins", { body: { action: "list" } }),
+      supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
     ]);
     if (!collegeRes.error) setColleges(collegeRes.data || []);
-    if (!studentRes.error) setTotalStudents(studentRes.count || 0);
     if (!caRes.error && caRes.data?.data) setCollegeAdmins(caRes.data.data);
+    if (!statsRes.error && statsRes.data) {
+      setTotalStudents(statsRes.data.total_students || 0);
+      setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
+    }
     setFetching(false);
   }, []);
 
@@ -239,7 +243,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -247,6 +251,15 @@ const MasterDashboard = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Colleges</p>
               <p className="text-3xl font-bold text-foreground">{colleges.length}</p>
+            </div>
+          </div>
+          <div className="liquid-glass p-6 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <UserPlus className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Dept Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">

@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     // === COLLEGE ADMIN ACTIONS (verified by admin_id from session) ===
-    if (action === "create_dept_admin" || action === "list_dept_admins" || action === "toggle_dept_admin") {
+    if (["create_dept_admin", "list_dept_admins", "toggle_dept_admin", "college_stats"].includes(action)) {
       const { admin_id } = payload;
       if (!admin_id) return json({ error: "Unauthorized" }, 401);
 
@@ -77,6 +77,42 @@ Deno.serve(async (req) => {
           .single();
         if (colErr || !newCollege) return json({ error: "Failed to create college record" }, 500);
         collegeId = newCollege.id;
+      }
+
+      // === COLLEGE STATS ===
+      if (action === "college_stats") {
+        // Get departments for this college
+        const { data: depts } = await supabaseAdmin
+          .from("departments")
+          .select("id, department_name")
+          .eq("college_id", collegeId)
+          .eq("is_active", true);
+
+        const deptIds = (depts || []).map(d => d.id);
+
+        // Get all students for this college
+        const { data: students } = await supabaseAdmin
+          .from("hierarchy_students")
+          .select("id, department_id, is_assigned")
+          .eq("college_id", collegeId);
+
+        const allStudents = students || [];
+        const totalStudents = allStudents.length;
+        const totalAssigned = allStudents.filter(s => s.is_assigned).length;
+        const totalPending = totalStudents - totalAssigned;
+
+        // Department-wise breakdown
+        const deptBreakdown = (depts || []).map(dept => {
+          const deptStudents = allStudents.filter(s => s.department_id === dept.id);
+          return {
+            department_name: dept.department_name,
+            total: deptStudents.length,
+            assigned: deptStudents.filter(s => s.is_assigned).length,
+            pending: deptStudents.filter(s => !s.is_assigned).length,
+          };
+        });
+
+        return json({ total_students: totalStudents, total_assigned: totalAssigned, total_pending: totalPending, total_departments: (depts || []).length, departments: deptBreakdown });
       }
 
       // === CREATE DEPT ADMIN ===
@@ -195,6 +231,35 @@ Deno.serve(async (req) => {
 
         return json({ success: true });
       }
+    }
+
+    // === MASTER STATS (no auth header needed for simplicity, but verified below) ===
+    if (action === "master_stats") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) return json({ error: "Unauthorized" }, 401);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (authError || !user) return json({ error: "Unauthorized" }, 401);
+
+      const { data: callerAdmin } = await supabaseAdmin
+        .from("hierarchy_admins")
+        .select("id, role")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+      if (!callerAdmin || callerAdmin.role !== "master_admin") return json({ error: "Forbidden" }, 403);
+
+      const [collegesRes, deptAdminsRes, studentsRes] = await Promise.all([
+        supabaseAdmin.from("colleges").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }).eq("role", "dept_admin"),
+        supabaseAdmin.from("hierarchy_students").select("id", { count: "exact", head: true }),
+      ]);
+
+      return json({
+        total_colleges: collegesRes.count || 0,
+        total_dept_admins: deptAdminsRes.count || 0,
+        total_students: studentsRes.count || 0,
+      });
     }
 
     // === All other actions require master admin auth ===
