@@ -365,6 +365,15 @@ const CollegeAdminDashboard = () => {
               </table>
             </div>
           </div>
+        ) : (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
+            <div className="liquid-glass p-8 text-center">
+              <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">No admins or staff yet</p>
+              <p className="text-xs text-muted-foreground">Department admins and their staff will appear here once created.</p>
+            </div>
+          </div>
         )}
       </div>
 
