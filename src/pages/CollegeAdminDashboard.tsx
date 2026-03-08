@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 interface DeptAdmin {
   id: string;
@@ -14,12 +15,14 @@ interface DeptAdmin {
   department_name: string;
   is_active: boolean;
   created_at: string;
+  role: string;
 }
 
 const CollegeAdminDashboard = () => {
   const [collegeName, setCollegeName] = useState("");
   const [adminId, setAdminId] = useState("");
   const [deptAdmins, setDeptAdmins] = useState<DeptAdmin[]>([]);
+  const [allSubordinates, setAllSubordinates] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deptName, setDeptName] = useState("");
   const [username, setUsername] = useState("");
@@ -28,6 +31,12 @@ const CollegeAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
   const [totalDepartments, setTotalDepartments] = useState(0);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetting, setResetting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -74,6 +83,15 @@ const CollegeAdminDashboard = () => {
     }
   };
 
+  const fetchSubordinates = async () => {
+    try {
+      const res = await supabase.functions.invoke("manage-staff", {
+        body: { action: "list_college_subordinates" },
+      });
+      if (!res.error && res.data?.data) setAllSubordinates(res.data.data);
+    } catch { /* ignore - college admin may not have auth session */ }
+  };
+
   const fetchStats = async () => {
     if (!adminId) return;
     try {
@@ -91,7 +109,7 @@ const CollegeAdminDashboard = () => {
 
   useEffect(() => {
     if (adminId) {
-      Promise.all([fetchDeptAdmins(), fetchStats()]).finally(() => setLoading(false));
+      Promise.all([fetchDeptAdmins(), fetchStats(), fetchSubordinates()]).finally(() => setLoading(false));
     }
   }, [adminId]);
 
@@ -117,6 +135,7 @@ const CollegeAdminDashboard = () => {
       setDialogOpen(false);
       fetchDeptAdmins();
       fetchStats();
+      fetchSubordinates();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -138,9 +157,30 @@ const CollegeAdminDashboard = () => {
       if (data?.error) throw new Error(data.error);
       toast({ title: "Success", description: `Admin ${currentActive ? "deactivated" : "activated"}` });
       fetchDeptAdmins();
+      fetchSubordinates();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPassword.trim() || resetPassword !== resetConfirm) {
+      toast({ title: "Passwords don't match or empty", variant: "destructive" }); return;
+    }
+    if (resetPassword.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return;
+    }
+    setResetting(true);
+    try {
+      const res = await supabase.functions.invoke("manage-staff", {
+        body: { action: "reset_password", target_username: resetTarget, new_password: resetPassword },
+      });
+      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message);
+      toast({ title: "Password reset successfully" });
+      setResetOpen(false); setResetPassword(""); setResetConfirm(""); setResetTarget("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setResetting(false); }
   };
 
   const handleLogout = () => {
@@ -162,11 +202,16 @@ const CollegeAdminDashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Building2 className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{collegeName} - Super Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{collegeName} - Super Admin</h1>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
-            <LogOut className="w-4 h-4 mr-1.5" /> Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setChangePasswordOpen(true)}>
+              <KeyRound className="w-4 h-4 mr-1.5" /> Password
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+              <LogOut className="w-4 h-4 mr-1.5" /> Sign out
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -258,9 +303,14 @@ const CollegeAdminDashboard = () => {
                         </span>
                       </td>
                       <td className="p-3 text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleToggle(admin.id, admin.is_active)} className="text-xs">
-                          {admin.is_active ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Deactivate</> : <><Shield className="w-3.5 h-3.5 mr-1" /> Activate</>}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setResetTarget(admin.username); setResetOpen(true); }}>
+                            <KeyRound className="w-3.5 h-3.5 mr-1" /> Reset
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleToggle(admin.id, admin.is_active)} className="text-xs">
+                            {admin.is_active ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Deactivate</> : <><Shield className="w-3.5 h-3.5 mr-1" /> Activate</>}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -269,7 +319,77 @@ const CollegeAdminDashboard = () => {
             </div>
           )}
         </div>
+
+        {/* All Subordinates (dept admins + staff) with password reset */}
+        {allSubordinates.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
+            <div className="liquid-glass overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Username</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Department</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Role</th>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                    <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allSubordinates.map(sub => (
+                    <tr key={sub.id} className="border-b border-border/30 last:border-0">
+                      <td className="p-3 text-foreground">{sub.full_name}</td>
+                      <td className="p-3 text-foreground">{sub.username}</td>
+                      <td className="p-3 text-muted-foreground">{sub.department_name}</td>
+                      <td className="p-3">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sub.role === "dept_admin" ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                          {sub.role === "dept_admin" ? "Dept Admin" : "Staff"}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sub.is_active ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+                          {sub.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setResetTarget(sub.username); setResetOpen(true); }}>
+                          <KeyRound className="w-3.5 h-3.5 mr-1" /> Reset Password
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Reset Password — {resetTarget}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium text-foreground">New Password</label>
+              <Input type="password" value={resetPassword} onChange={e => setResetPassword(e.target.value)} placeholder="Min 6 characters" className="mt-1" autoComplete="off" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Confirm Password</label>
+              <Input type="password" value={resetConfirm} onChange={e => setResetConfirm(e.target.value)} placeholder="Re-enter password" className="mt-1" autoComplete="off" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetOpen(false)}>Cancel</Button>
+            <Button onClick={handleResetPassword} disabled={resetting}>
+              {resetting ? <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> : "Reset Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
 };

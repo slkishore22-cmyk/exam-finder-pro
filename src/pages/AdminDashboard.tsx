@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, LogOut, RefreshCw, Sun, Moon, Link2, Check } from "lucide-react";
+import { Plus, LogOut, RefreshCw, Sun, Moon, Link2, Check, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import AddAssignmentDialog from "@/components/AddAssignmentDialog";
 import BatchCard from "@/components/BatchCard";
+import StaffPanel from "@/components/StaffPanel";
+import ActivityLog from "@/components/ActivityLog";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 interface HallAssignment {
   id: string;
@@ -33,9 +36,17 @@ const AdminDashboard = () => {
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [copied, setCopied] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [adminRole, setAdminRole] = useState<string>("dept_admin");
+  const [adminName, setAdminName] = useState("");
+  const [staff, setStaff] = useState<any[]>([]);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const appLink = "https://seat-finder-plus.lovable.app";
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const isDeptAdmin = adminRole === "dept_admin";
+  const isStaff = adminRole === "dept_staff";
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -68,10 +79,25 @@ const AdminDashboard = () => {
     };
   }, [navigate]);
 
+  // Fetch role info
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const res = await supabase.functions.invoke("manage-staff", {
+          body: { action: "get_role_info" },
+        });
+        if (!res.error && res.data) {
+          setAdminRole(res.data.role || "dept_admin");
+          setAdminName(res.data.full_name || "");
+        }
+      } catch { /* ignore */ }
+    };
+    if (!loading) fetchRole();
+  }, [loading]);
+
   const fetchData = useCallback(async () => {
     setFetching(true);
 
-    // Get current admin's department_id for filtering
     const { data: { user } } = await supabase.auth.getUser();
     let departmentId: string | null = null;
     if (user) {
@@ -86,7 +112,6 @@ const AdminDashboard = () => {
       }
     }
 
-    // Build queries with department filter for dept_admin
     let batchQuery = supabase.from("assignment_batches").select("id, name, scheduled_at, created_at").order("created_at", { ascending: false });
     let assignQuery = supabase.from("hall_assignments").select("id, roll_number, hall_number, batch_id").order("roll_number");
 
@@ -111,13 +136,44 @@ const AdminDashboard = () => {
     setFetching(false);
   }, [toast]);
 
+  const fetchStaff = useCallback(async () => {
+    try {
+      const res = await supabase.functions.invoke("manage-staff", {
+        body: { action: "list_staff" },
+      });
+      if (!res.error && res.data?.data) setStaff(res.data.data);
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchActivity = useCallback(async () => {
+    try {
+      const res = await supabase.functions.invoke("manage-staff", {
+        body: { action: "list_activity" },
+      });
+      if (!res.error && res.data?.data) setActivityLogs(res.data.data);
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
-    if (!loading) fetchData();
-  }, [loading, fetchData]);
+    if (!loading) {
+      fetchData();
+      fetchStaff();
+      fetchActivity();
+    }
+  }, [loading, fetchData, fetchStaff, fetchActivity]);
+
+  const handleRefreshAll = () => {
+    fetchData();
+    fetchStaff();
+    fetchActivity();
+  };
 
   const handleDeleteBatch = async (batchId: string) => {
+    if (isStaff) {
+      toast({ title: "Staff cannot delete batches", variant: "destructive" });
+      return;
+    }
     setDeletingBatch(batchId);
-    // Deleting batch cascades to assignments
     const { error } = await supabase.from("assignment_batches").delete().eq("id", batchId);
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
@@ -146,7 +202,14 @@ const AdminDashboard = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Hall Assignments</h1>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Hall Assignments</h1>
+            {adminName && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {adminName} · <span className="capitalize">{adminRole === "dept_admin" ? "Department Admin" : "Staff"}</span>
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -159,9 +222,13 @@ const AdminDashboard = () => {
             >
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={fetching}>
+            <Button variant="outline" size="sm" onClick={handleRefreshAll} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} />
               Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setChangePasswordOpen(true)}>
+              <KeyRound className="w-4 h-4 mr-1.5" />
+              Password
             </Button>
             <Button size="sm" onClick={() => setOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" />
@@ -208,6 +275,12 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Staff Panel */}
+        <StaffPanel staff={staff} isDeptAdmin={isDeptAdmin} onRefresh={() => { fetchStaff(); fetchActivity(); }} />
+
+        {/* Activity Log */}
+        <ActivityLog logs={activityLogs} />
+
         {/* Batch grid */}
         {batches.length === 0 && !fetching ? (
           <div className="py-16 text-center text-muted-foreground text-sm border border-border rounded-xl">
@@ -223,8 +296,9 @@ const AdminDashboard = () => {
                 scheduledAt={b.scheduled_at}
                 assignments={b.assignments}
                 onDeleteBatch={handleDeleteBatch}
-                onRefresh={fetchData}
+                onRefresh={handleRefreshAll}
                 deleting={deletingBatch === b.id}
+                canDelete={isDeptAdmin}
               />
             ))}
           </div>
@@ -241,7 +315,8 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      <AddAssignmentDialog open={open} onOpenChange={setOpen} onSaved={fetchData} />
+      <AddAssignmentDialog open={open} onOpenChange={setOpen} onSaved={handleRefreshAll} />
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
 };

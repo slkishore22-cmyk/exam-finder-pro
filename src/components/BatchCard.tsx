@@ -26,9 +26,10 @@ interface BatchCardProps {
   onDeleteBatch: (batchId: string) => void;
   onRefresh: () => void;
   deleting: boolean;
+  canDelete?: boolean;
 }
 
-const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onRefresh, deleting }: BatchCardProps) => {
+const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onRefresh, deleting, canDelete = true }: BatchCardProps) => {
   const [editOpen, setEditOpen] = useState(false);
 
   return (
@@ -80,19 +81,21 @@ const BatchCard = ({ batchId, name, scheduledAt, assignments, onDeleteBatch, onR
           </Table>
         </div>
 
-        {/* Delete batch */}
-        <div className="px-4 py-3 border-t border-border/20 bg-secondary/5">
-          <Button
-            variant="destructive"
-            size="sm"
-            className="w-full"
-            onClick={() => onDeleteBatch(batchId)}
-            disabled={deleting}
-          >
-            <Trash2 className="w-4 h-4 mr-1.5" />
-            {deleting ? "Deleting…" : "Delete Entire Batch"}
-          </Button>
-        </div>
+        {/* Delete batch - only if canDelete */}
+        {canDelete && (
+          <div className="px-4 py-3 border-t border-border/20 bg-secondary/5">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="w-full"
+              onClick={() => onDeleteBatch(batchId)}
+              disabled={deleting}
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              {deleting ? "Deleting…" : "Delete Entire Batch"}
+            </Button>
+          </div>
+        )}
       </motion.div>
 
       <EditBatchDialog
