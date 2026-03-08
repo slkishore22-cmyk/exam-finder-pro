@@ -54,7 +54,6 @@ const MasterDashboard = () => {
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [permanentTotal, setPermanentTotal] = useState(0);
-  const [permanentTotal, setPermanentTotal] = useState(0);
   const [resetCountOpen, setResetCountOpen] = useState(false);
   const [resetMode, setResetMode] = useState<"all" | "specific">("all");
   const [resetCountTarget, setResetCountTarget] = useState<string>("");
