@@ -87,7 +87,9 @@ const MasterDashboard = () => {
     if (!collegeRes.error) setColleges(collegeRes.data || []);
     if (!statsRes.error && statsRes.data) {
       setTotalStudents(statsRes.data.total_students || 0);
-      setTotalAdmins(statsRes.data.total_admins || 0);
+      setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
+      setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
+      setDetails(statsRes.data.details || []);
     }
     setFetching(false);
   }, []);
