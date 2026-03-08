@@ -70,10 +70,32 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [batchRes, assignRes] = await Promise.all([
-      supabase.from("assignment_batches").select("id, name, scheduled_at, created_at").order("created_at", { ascending: false }),
-      supabase.from("hall_assignments").select("id, roll_number, hall_number, batch_id").order("roll_number"),
-    ]);
+
+    // Get current admin's department_id for filtering
+    const { data: { user } } = await supabase.auth.getUser();
+    let departmentId: string | null = null;
+    if (user) {
+      const { data: adminInfo } = await supabase
+        .from("hierarchy_admins")
+        .select("department_id, role")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .single();
+      if (adminInfo?.department_id) {
+        departmentId = adminInfo.department_id;
+      }
+    }
+
+    // Build queries with department filter for dept_admin
+    let batchQuery = supabase.from("assignment_batches").select("id, name, scheduled_at, created_at").order("created_at", { ascending: false });
+    let assignQuery = supabase.from("hall_assignments").select("id, roll_number, hall_number, batch_id").order("roll_number");
+
+    if (departmentId) {
+      batchQuery = batchQuery.eq("department_id", departmentId);
+      assignQuery = assignQuery.eq("department_id", departmentId);
+    }
+
+    const [batchRes, assignRes] = await Promise.all([batchQuery, assignQuery]);
 
     if (batchRes.error || assignRes.error) {
       toast({ title: "Failed to load data", variant: "destructive" });

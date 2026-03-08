@@ -48,27 +48,48 @@ export type Database = {
       }
       assignment_batches: {
         Row: {
+          college_id: string | null
           created_at: string
           created_by: string | null
+          department_id: string | null
           id: string
           name: string
           scheduled_at: string | null
         }
         Insert: {
+          college_id?: string | null
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           id?: string
           name?: string
           scheduled_at?: string | null
         }
         Update: {
+          college_id?: string | null
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           id?: string
           name?: string
           scheduled_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assignment_batches_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_batches_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       college_admins: {
         Row: {
@@ -201,24 +222,30 @@ export type Database = {
       hall_assignments: {
         Row: {
           batch_id: string | null
+          college_id: string | null
           created_at: string
           created_by: string | null
+          department_id: string | null
           hall_number: string
           id: string
           roll_number: string
         }
         Insert: {
           batch_id?: string | null
+          college_id?: string | null
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           hall_number: string
           id?: string
           roll_number: string
         }
         Update: {
           batch_id?: string | null
+          college_id?: string | null
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           hall_number?: string
           id?: string
           roll_number?: string
@@ -229,6 +256,20 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "assignment_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hall_assignments_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hall_assignments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
         ]

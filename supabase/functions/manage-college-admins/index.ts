@@ -87,23 +87,13 @@ Deno.serve(async (req) => {
           .eq("college_id", collegeId)
           .eq("is_active", true);
 
-        // Get roll numbers for this college from hierarchy_students
-        const { data: students } = await supabaseAdmin
-          .from("hierarchy_students")
-          .select("roll_number")
+        // Count students directly from hall_assignments filtered by college_id
+        const { count: studentCount } = await supabaseAdmin
+          .from("hall_assignments")
+          .select("id", { count: "exact", head: true })
           .eq("college_id", collegeId);
 
-        const rollNumbers = (students || []).map(s => s.roll_number);
-        let studentCount = 0;
-        if (rollNumbers.length > 0) {
-          const { count } = await supabaseAdmin
-            .from("hall_assignments")
-            .select("id", { count: "exact", head: true })
-            .in("roll_number", rollNumbers);
-          studentCount = count || 0;
-        }
-
-        return json({ total_departments: (depts || []).length, total_students: studentCount });
+        return json({ total_departments: (depts || []).length, total_students: studentCount || 0 });
       }
 
       // === CREATE DEPT ADMIN ===
@@ -251,25 +241,22 @@ Deno.serve(async (req) => {
       const { data: allColleges } = await supabaseAdmin.from("colleges").select("id, college_name, is_active");
       const { data: allCollegeAdmins } = await supabaseAdmin.from("college_admins").select("id, college_name, username, is_active");
       const { data: allDeptAdmins } = await supabaseAdmin.from("hierarchy_admins").select("id, college_id").eq("role", "dept_admin");
-      const { data: allStudents } = await supabaseAdmin.from("hierarchy_students").select("roll_number, college_id");
 
-      // Count hall_assignments per college via roll_numbers
-      const { data: allAssignments } = await supabaseAdmin.from("hall_assignments").select("roll_number");
-      const assignedRolls = new Set((allAssignments || []).map(a => a.roll_number));
-
-      const details = (allColleges || []).map(college => {
+      const details = await Promise.all((allColleges || []).map(async (college) => {
         const superAdmin = (allCollegeAdmins || []).find(ca => ca.college_name === college.college_name);
         const deptCount = (allDeptAdmins || []).filter(da => da.college_id === college.id).length;
-        const collegeRolls = (allStudents || []).filter(s => s.college_id === college.id).map(s => s.roll_number);
-        const studentCount = collegeRolls.filter(r => assignedRolls.has(r)).length;
+        const { count: studentCount } = await supabaseAdmin
+          .from("hall_assignments")
+          .select("id", { count: "exact", head: true })
+          .eq("college_id", college.id);
         return {
           college_name: college.college_name,
           super_admin_username: superAdmin?.username || "—",
           total_dept_admins: deptCount,
-          total_students: studentCount,
+          total_students: studentCount || 0,
           is_active: college.is_active,
         };
-      });
+      }));
 
       return json({
         total_colleges: collegesRes.count || 0,
