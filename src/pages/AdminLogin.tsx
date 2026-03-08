@@ -30,7 +30,9 @@ const AdminLogin = () => {
         if (error) throw error;
         toast({ title: "Check your email", description: "We sent you a confirmation link." });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        // Support username login: if no @ symbol, treat as synthetic dept admin email
+        const loginEmail = email.includes("@") ? email : `${email}@deptadmin.examhall.internal`;
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         navigate("/admin/dashboard");
       }
@@ -67,8 +69,8 @@ const AdminLogin = () => {
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                type="email"
-                placeholder="Email address"
+                type="text"
+                placeholder="Email or Username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-12 pl-11 rounded-xl bg-secondary/60 border-border/60 input-glow"
