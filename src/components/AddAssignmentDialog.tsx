@@ -152,6 +152,18 @@ const AddAssignmentDialog = ({ open, onOpenChange, onSaved }: AddAssignmentDialo
     } else {
       setSaved(true);
       toast({ title: `${filled.length} assignments saved` });
+
+      // Log activity
+      try {
+        await supabase.functions.invoke("manage-staff", {
+          body: {
+            action: "log_activity",
+            log_action: "add_assignments",
+            details: `Added ${filled.length} roll numbers to hall ${hallNumber.trim()} in batch "${batchName.trim()}"`,
+          },
+        });
+      } catch { /* ignore logging errors */ }
+
       onSaved();
       setTimeout(() => {
         onOpenChange(false);
