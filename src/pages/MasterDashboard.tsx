@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound } from "lucide-react";
+import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound, GraduationCap, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,9 @@ const MasterDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [colleges, setColleges] = useState<College[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [totalAdmins, setTotalAdmins] = useState(0);
+  const [totalCollegeAdmins, setTotalCollegeAdmins] = useState(0);
+  const [totalDeptAdmins, setTotalDeptAdmins] = useState(0);
+  const [details, setDetails] = useState<any[]>([]);
   const [fetching, setFetching] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -84,7 +87,9 @@ const MasterDashboard = () => {
     if (!collegeRes.error) setColleges(collegeRes.data || []);
     if (!statsRes.error && statsRes.data) {
       setTotalStudents(statsRes.data.total_students || 0);
-      setTotalAdmins(statsRes.data.total_admins || 0);
+      setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
+      setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
+      setDetails(statsRes.data.details || []);
     }
     setFetching(false);
   }, []);
@@ -188,7 +193,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -200,16 +205,25 @@ const MasterDashboard = () => {
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-primary" />
+              <UserCheck className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Admins</p>
-              <p className="text-3xl font-bold text-foreground">{totalAdmins}</p>
+              <p className="text-sm text-muted-foreground">Total College Super Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalCollegeAdmins}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary" />
+              <Shield className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Department Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
+            </div>
+          </div>
+          <div className="liquid-glass p-6 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Students</p>
@@ -218,11 +232,48 @@ const MasterDashboard = () => {
           </div>
         </div>
 
+        {/* Details Table */}
+        <div className="liquid-glass p-6 mb-8">
+          <h2 className="text-lg font-semibold text-foreground mb-4">College Details</h2>
+          {details.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No colleges yet. Click "Create College Admin" to add one.</p>
+          ) : (
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>College Name</TableHead>
+                    <TableHead>Super Admin Username</TableHead>
+                    <TableHead>Total Dept Admins</TableHead>
+                    <TableHead>Total Students</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {details.map((d, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{d.college_name}</TableCell>
+                      <TableCell>{d.super_admin_username}</TableCell>
+                      <TableCell>{d.total_dept_admins}</TableCell>
+                      <TableCell>{d.total_students}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${d.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
+                          {d.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+
         {/* Colleges list */}
         <div className="liquid-glass p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Colleges</h2>
           {colleges.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No colleges yet. Click "Create College Admin" to add one.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No colleges yet.</p>
           ) : (
             <div className="space-y-3">
               {colleges.map(c => (

@@ -240,16 +240,43 @@ Deno.serve(async (req) => {
         .single();
       if (!callerAdmin || callerAdmin.role !== "master_admin") return json({ error: "Forbidden" }, 403);
 
-      const [collegesRes, adminsRes, studentsRes] = await Promise.all([
+      const [collegesRes, collegeAdminsRes, deptAdminsRes, studentsRes] = await Promise.all([
         supabaseAdmin.from("colleges").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("college_admins").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }).eq("role", "dept_admin"),
         supabaseAdmin.from("hall_assignments").select("id", { count: "exact", head: true }),
       ]);
 
+      // Build details: per-college breakdown
+      const { data: allColleges } = await supabaseAdmin.from("colleges").select("id, college_name, is_active");
+      const { data: allCollegeAdmins } = await supabaseAdmin.from("college_admins").select("id, college_name, username, is_active");
+      const { data: allDeptAdmins } = await supabaseAdmin.from("hierarchy_admins").select("id, college_id").eq("role", "dept_admin");
+      const { data: allStudents } = await supabaseAdmin.from("hierarchy_students").select("roll_number, college_id");
+
+      // Count hall_assignments per college via roll_numbers
+      const { data: allAssignments } = await supabaseAdmin.from("hall_assignments").select("roll_number");
+      const assignedRolls = new Set((allAssignments || []).map(a => a.roll_number));
+
+      const details = (allColleges || []).map(college => {
+        const superAdmin = (allCollegeAdmins || []).find(ca => ca.college_name === college.college_name);
+        const deptCount = (allDeptAdmins || []).filter(da => da.college_id === college.id).length;
+        const collegeRolls = (allStudents || []).filter(s => s.college_id === college.id).map(s => s.roll_number);
+        const studentCount = collegeRolls.filter(r => assignedRolls.has(r)).length;
+        return {
+          college_name: college.college_name,
+          super_admin_username: superAdmin?.username || "—",
+          total_dept_admins: deptCount,
+          total_students: studentCount,
+          is_active: college.is_active,
+        };
+      });
+
       return json({
         total_colleges: collegesRes.count || 0,
-        total_admins: adminsRes.count || 0,
+        total_college_admins: collegeAdminsRes.count || 0,
+        total_dept_admins: deptAdminsRes.count || 0,
         total_students: studentsRes.count || 0,
+        details,
       });
     }
 
