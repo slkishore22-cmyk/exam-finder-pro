@@ -58,6 +58,11 @@ const MasterDashboard = () => {
   const [resetUsername, setResetUsername] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [permanentTotal, setPermanentTotal] = useState(0);
+  const [permanentByCollege, setPermanentByCollege] = useState<Record<string, number>>({});
+  const [resetCountOpen, setResetCountOpen] = useState(false);
+  const [resetCountTarget, setResetCountTarget] = useState<string>("all");
+  const [resettingCount, setResettingCount] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
