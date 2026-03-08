@@ -402,6 +402,41 @@ export type Database = {
           },
         ]
       }
+      permanent_counts: {
+        Row: {
+          college_id: string | null
+          created_at: string | null
+          id: string
+          last_reset_at: string | null
+          last_reset_by: string | null
+          total_students: number | null
+        }
+        Insert: {
+          college_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_reset_at?: string | null
+          last_reset_by?: string | null
+          total_students?: number | null
+        }
+        Update: {
+          college_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_reset_at?: string | null
+          last_reset_by?: string | null
+          total_students?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permanent_counts_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
