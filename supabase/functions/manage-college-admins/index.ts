@@ -87,13 +87,14 @@ Deno.serve(async (req) => {
           .eq("college_id", collegeId)
           .eq("is_active", true);
 
-        // Count students directly from hall_assignments filtered by college_id
-        const { count: studentCount } = await supabaseAdmin
-          .from("hall_assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("college_id", collegeId);
+        // Count students from permanent_counts (never decreases)
+        const { data: permRow } = await supabaseAdmin
+          .from("permanent_counts")
+          .select("total_students")
+          .eq("college_id", collegeId)
+          .single();
 
-        return json({ total_departments: (depts || []).length, total_students: studentCount || 0 });
+        return json({ total_departments: (depts || []).length, total_students: permRow?.total_students || 0 });
       }
 
       // === COLLEGE PERMANENT COUNT ===
