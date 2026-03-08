@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       const { username, password } = payload;
       if (!username || !password) return json({ error: "Username and password required" }, 400);
 
-      // Find college admin record
+      // Find college admin record by username
       const { data: admin, error: findErr } = await supabaseAdmin
         .from("college_admins")
         .select("*")
@@ -33,20 +33,16 @@ Deno.serve(async (req) => {
       if (findErr || !admin) return json({ error: "Invalid username or password" }, 401);
       if (!admin.is_active) return json({ error: "Account is deactivated. Contact master admin." }, 403);
 
-      // Sign in with synthetic email
-      const syntheticEmail = `${username}@collegeadmin.examhall.internal`;
-      const { data: authData, error: authErr } = await supabaseAdmin.auth.signInWithPassword({
-        email: syntheticEmail,
-        password,
-      });
-
-      if (authErr) return json({ error: "Invalid username or password" }, 401);
+      // Direct password comparison
+      if (admin.password !== password) {
+        return json({ error: "Invalid username or password" }, 401);
+      }
 
       return json({
         success: true,
-        session: authData.session,
         college_name: admin.college_name,
         admin_id: admin.id,
+        username: admin.username,
       });
     }
 
@@ -81,25 +77,16 @@ Deno.serve(async (req) => {
         .single();
       if (existing) return json({ error: "Username already exists" }, 400);
 
-      // Create auth user
-      const syntheticEmail = `${username}@collegeadmin.examhall.internal`;
-      const { data: authData, error: authCreateErr } = await supabaseAdmin.auth.admin.createUser({
-        email: syntheticEmail,
-        password,
-        email_confirm: true,
-      });
-      if (authCreateErr) return json({ error: authCreateErr.message }, 400);
-
-      // Create college_admins record
+      // Create college_admins record with password stored directly
       const { error: insertErr } = await supabaseAdmin.from("college_admins").insert({
-        user_id: authData.user.id,
         college_name,
         username,
+        password,
         is_active: true,
         created_by: callerAdmin.id,
+        user_id: user.id,
       });
       if (insertErr) {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return json({ error: insertErr.message }, 400);
       }
 
