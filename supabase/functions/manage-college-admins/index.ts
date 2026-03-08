@@ -242,39 +242,43 @@ Deno.serve(async (req) => {
         .single();
       if (!callerAdmin || callerAdmin.role !== "master_admin") return json({ error: "Forbidden" }, 403);
 
-      const [collegesRes, collegeAdminsRes, deptAdminsRes, studentsRes] = await Promise.all([
+      const [collegesRes, collegeAdminsRes, deptAdminsRes, permCountsRes] = await Promise.all([
         supabaseAdmin.from("colleges").select("id", { count: "exact", head: true }),
         supabaseAdmin.from("college_admins").select("id", { count: "exact", head: true }),
         supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }).eq("role", "dept_admin"),
-        supabaseAdmin.from("hall_assignments").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("permanent_counts").select("college_id, total_students"),
       ]);
+
+      // Build a map of college_id -> permanent student count
+      const permMap: Record<string, number> = {};
+      let totalPermanentStudents = 0;
+      for (const row of (permCountsRes.data || [])) {
+        permMap[row.college_id] = row.total_students || 0;
+        totalPermanentStudents += row.total_students || 0;
+      }
 
       // Build details: per-college breakdown
       const { data: allColleges } = await supabaseAdmin.from("colleges").select("id, college_name, is_active");
       const { data: allCollegeAdmins } = await supabaseAdmin.from("college_admins").select("id, college_name, username, is_active");
       const { data: allDeptAdmins } = await supabaseAdmin.from("hierarchy_admins").select("id, college_id").eq("role", "dept_admin");
 
-      const details = await Promise.all((allColleges || []).map(async (college) => {
+      const details = (allColleges || []).map((college) => {
         const superAdmin = (allCollegeAdmins || []).find(ca => ca.college_name === college.college_name);
         const deptCount = (allDeptAdmins || []).filter(da => da.college_id === college.id).length;
-        const { count: studentCount } = await supabaseAdmin
-          .from("hall_assignments")
-          .select("id", { count: "exact", head: true })
-          .eq("college_id", college.id);
         return {
           college_name: college.college_name,
           super_admin_username: superAdmin?.username || "—",
           total_dept_admins: deptCount,
-          total_students: studentCount || 0,
+          total_students: permMap[college.id] || 0,
           is_active: college.is_active,
         };
-      }));
+      });
 
       return json({
         total_colleges: collegesRes.count || 0,
         total_college_admins: collegeAdminsRes.count || 0,
         total_dept_admins: deptAdminsRes.count || 0,
-        total_students: studentsRes.count || 0,
+        total_students: totalPermanentStudents,
         details,
       });
     }
