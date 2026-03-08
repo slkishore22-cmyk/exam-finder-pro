@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, KeyRound, TrendingUp } from "lucide-react";
+import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, KeyRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
