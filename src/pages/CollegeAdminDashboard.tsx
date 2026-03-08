@@ -30,6 +30,7 @@ const CollegeAdminDashboard = () => {
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [permanentStudents, setPermanentStudents] = useState(0);
   const [totalDepartments, setTotalDepartments] = useState(0);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
