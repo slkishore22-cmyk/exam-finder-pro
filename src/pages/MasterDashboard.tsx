@@ -193,7 +193,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -205,16 +205,25 @@ const MasterDashboard = () => {
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-primary" />
+              <UserCheck className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Admins</p>
-              <p className="text-3xl font-bold text-foreground">{totalAdmins}</p>
+              <p className="text-sm text-muted-foreground">Total College Super Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalCollegeAdmins}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary" />
+              <Shield className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Department Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
+            </div>
+          </div>
+          <div className="liquid-glass p-6 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Students</p>
