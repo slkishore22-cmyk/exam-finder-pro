@@ -30,7 +30,9 @@ const AdminLogin = () => {
         if (error) throw error;
         toast({ title: "Check your email", description: "We sent you a confirmation link." });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        // Support username login: if no @ symbol, treat as synthetic dept admin email
+        const loginEmail = email.includes("@") ? email : `${email}@deptadmin.examhall.internal`;
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         navigate("/admin/dashboard");
       }
