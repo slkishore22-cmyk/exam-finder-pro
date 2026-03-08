@@ -78,6 +78,19 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: adminErr.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // Also insert into college_admins table for college admin login
+      const { error: caErr } = await supabaseAdmin.from("college_admins").insert({
+        college_name,
+        username,
+        password,
+        is_active: true,
+        created_by: callerAdmin.id,
+        user_id: authData.user.id,
+      });
+      if (caErr) {
+        return new Response(JSON.stringify({ error: "College created but admin record failed: " + caErr.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       // Log activity
       await supabaseAdmin.from("admin_activity_logs").insert({
         admin_id: callerAdmin.id,
