@@ -251,7 +251,7 @@ const MasterDashboard = () => {
             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => { document.documentElement.classList.toggle("dark"); setDark(d => !d); }}>
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => fetchData()} disabled={fetching}>
+            <Button variant="outline" size="sm" onClick={() => fetchData(false, true)} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
             <Button size="sm" onClick={() => setDialogOpen(true)}>
