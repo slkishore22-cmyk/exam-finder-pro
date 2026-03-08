@@ -81,38 +81,29 @@ Deno.serve(async (req) => {
 
       // === COLLEGE STATS ===
       if (action === "college_stats") {
-        // Get departments for this college
         const { data: depts } = await supabaseAdmin
           .from("departments")
-          .select("id, department_name")
+          .select("id")
           .eq("college_id", collegeId)
           .eq("is_active", true);
 
-        const deptIds = (depts || []).map(d => d.id);
-
-        // Get all students for this college
+        // Get roll numbers for this college from hierarchy_students
         const { data: students } = await supabaseAdmin
           .from("hierarchy_students")
-          .select("id, department_id, is_assigned")
+          .select("roll_number")
           .eq("college_id", collegeId);
 
-        const allStudents = students || [];
-        const totalStudents = allStudents.length;
-        const totalAssigned = allStudents.filter(s => s.is_assigned).length;
-        const totalPending = totalStudents - totalAssigned;
+        const rollNumbers = (students || []).map(s => s.roll_number);
+        let studentCount = 0;
+        if (rollNumbers.length > 0) {
+          const { count } = await supabaseAdmin
+            .from("hall_assignments")
+            .select("id", { count: "exact", head: true })
+            .in("roll_number", rollNumbers);
+          studentCount = count || 0;
+        }
 
-        // Department-wise breakdown
-        const deptBreakdown = (depts || []).map(dept => {
-          const deptStudents = allStudents.filter(s => s.department_id === dept.id);
-          return {
-            department_name: dept.department_name,
-            total: deptStudents.length,
-            assigned: deptStudents.filter(s => s.is_assigned).length,
-            pending: deptStudents.filter(s => !s.is_assigned).length,
-          };
-        });
-
-        return json({ total_students: totalStudents, total_assigned: totalAssigned, total_pending: totalPending, total_departments: (depts || []).length, departments: deptBreakdown });
+        return json({ total_departments: (depts || []).length, total_students: studentCount });
       }
 
       // === CREATE DEPT ADMIN ===
@@ -249,15 +240,15 @@ Deno.serve(async (req) => {
         .single();
       if (!callerAdmin || callerAdmin.role !== "master_admin") return json({ error: "Forbidden" }, 403);
 
-      const [collegesRes, deptAdminsRes, studentsRes] = await Promise.all([
+      const [collegesRes, adminsRes, studentsRes] = await Promise.all([
         supabaseAdmin.from("colleges").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }).eq("role", "dept_admin"),
-        supabaseAdmin.from("hierarchy_students").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hall_assignments").select("id", { count: "exact", head: true }),
       ]);
 
       return json({
         total_colleges: collegesRes.count || 0,
-        total_dept_admins: deptAdminsRes.count || 0,
+        total_admins: adminsRes.count || 0,
         total_students: studentsRes.count || 0,
       });
     }

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, CheckCircle, Clock } from "lucide-react";
+import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,13 +14,6 @@ interface DeptAdmin {
   department_name: string;
   is_active: boolean;
   created_at: string;
-}
-
-interface DeptBreakdown {
-  department_name: string;
-  total: number;
-  assigned: number;
-  pending: number;
 }
 
 const CollegeAdminDashboard = () => {
@@ -34,10 +27,7 @@ const CollegeAdminDashboard = () => {
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [totalAssigned, setTotalAssigned] = useState(0);
-  const [totalPending, setTotalPending] = useState(0);
   const [totalDepartments, setTotalDepartments] = useState(0);
-  const [deptBreakdown, setDeptBreakdown] = useState<DeptBreakdown[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -52,7 +42,6 @@ const CollegeAdminDashboard = () => {
     setAdminId(parsed.admin_id || "");
   }, [navigate]);
 
-  // Inactivity timeout (2 hours)
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const resetTimer = () => {
@@ -94,10 +83,7 @@ const CollegeAdminDashboard = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setTotalStudents(data.total_students || 0);
-      setTotalAssigned(data.total_assigned || 0);
-      setTotalPending(data.total_pending || 0);
       setTotalDepartments(data.total_departments || 0);
-      setDeptBreakdown(data.departments || []);
     } catch (err: any) {
       console.error("Stats error:", err);
     }
@@ -184,13 +170,13 @@ const CollegeAdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           <div className="liquid-glass p-5 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Layers className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Departments</p>
+              <p className="text-xs text-muted-foreground">Total Departments</p>
               <p className="text-2xl font-bold text-foreground">{totalDepartments}</p>
             </div>
           </div>
@@ -203,54 +189,7 @@ const CollegeAdminDashboard = () => {
               <p className="text-2xl font-bold text-foreground">{totalStudents}</p>
             </div>
           </div>
-          <div className="liquid-glass p-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Assigned</p>
-              <p className="text-2xl font-bold text-foreground">{totalAssigned}</p>
-            </div>
-          </div>
-          <div className="liquid-glass p-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold text-foreground">{totalPending}</p>
-            </div>
-          </div>
         </div>
-
-        {/* Department-wise breakdown */}
-        {deptBreakdown.length > 0 && (
-          <div className="liquid-glass overflow-hidden mb-8">
-            <div className="p-4 border-b border-border/50">
-              <h2 className="text-sm font-semibold text-foreground">Department-wise Students</h2>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/50">
-                  <th className="text-left p-3 font-medium text-muted-foreground">Department</th>
-                  <th className="text-center p-3 font-medium text-muted-foreground">Total</th>
-                  <th className="text-center p-3 font-medium text-muted-foreground">Assigned</th>
-                  <th className="text-center p-3 font-medium text-muted-foreground">Pending</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deptBreakdown.map((dept, i) => (
-                  <tr key={i} className="border-b border-border/30 last:border-0">
-                    <td className="p-3 text-foreground">{dept.department_name}</td>
-                    <td className="p-3 text-center text-foreground">{dept.total}</td>
-                    <td className="p-3 text-center text-green-500">{dept.assigned}</td>
-                    <td className="p-3 text-center text-amber-500">{dept.pending}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
         {/* Department Admins Section */}
         <div className="mt-8">
