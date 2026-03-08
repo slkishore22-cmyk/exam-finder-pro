@@ -144,7 +144,7 @@ const CollegeAdminDashboard = () => {
       if (data?.error) throw new Error(data.error);
       toast({ title: "Success", description: `Admin ${currentActive ? "deactivated" : "activated"}` });
       fetchDeptAdmins();
-      fetchSubordinates();
+      
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
