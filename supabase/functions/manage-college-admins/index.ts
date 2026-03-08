@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     // === COLLEGE ADMIN ACTIONS (verified by admin_id from session) ===
-    if (["create_dept_admin", "list_dept_admins", "toggle_dept_admin", "college_stats"].includes(action)) {
+    if (["create_dept_admin", "list_dept_admins", "toggle_dept_admin", "college_stats", "college_permanent_count"].includes(action)) {
       const { admin_id } = payload;
       if (!admin_id) return json({ error: "Unauthorized" }, 401);
 
