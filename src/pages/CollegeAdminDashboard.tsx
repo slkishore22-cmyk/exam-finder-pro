@@ -161,25 +161,6 @@ const CollegeAdminDashboard = () => {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!resetPassword.trim() || resetPassword !== resetConfirm) {
-      toast({ title: "Passwords don't match or empty", variant: "destructive" }); return;
-    }
-    if (resetPassword.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return;
-    }
-    setResetting(true);
-    try {
-      const res = await supabase.functions.invoke("manage-staff", {
-        body: { action: "reset_password", target_username: resetTarget, new_password: resetPassword },
-      });
-      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message);
-      toast({ title: "Password reset successfully" });
-      setResetOpen(false); setResetPassword(""); setResetConfirm(""); setResetTarget("");
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally { setResetting(false); }
-  };
 
   const handleLogout = () => {
     sessionStorage.removeItem("college_admin_session");
