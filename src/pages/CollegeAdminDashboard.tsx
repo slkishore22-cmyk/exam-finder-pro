@@ -307,14 +307,9 @@ const CollegeAdminDashboard = () => {
                         </span>
                       </td>
                       <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setResetTarget(admin.username); setResetOpen(true); }}>
-                            <KeyRound className="w-3.5 h-3.5 mr-1" /> Reset
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleToggle(admin.id, admin.is_active)} className="text-xs">
-                            {admin.is_active ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Deactivate</> : <><Shield className="w-3.5 h-3.5 mr-1" /> Activate</>}
-                          </Button>
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => handleToggle(admin.id, admin.is_active)} className="text-xs">
+                          {admin.is_active ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Deactivate</> : <><Shield className="w-3.5 h-3.5 mr-1" /> Activate</>}
+                        </Button>
                       </td>
                     </tr>
                   ))}
