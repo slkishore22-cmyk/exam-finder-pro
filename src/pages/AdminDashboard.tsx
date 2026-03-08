@@ -283,8 +283,10 @@ const AdminDashboard = () => {
 
         {/* Batch grid */}
         {batches.length === 0 && !fetching ? (
-          <div className="py-16 text-center text-muted-foreground text-sm border border-border rounded-xl">
-            No batches yet. Click <span className="font-medium text-foreground">Add</span> to get started.
+          <div className="py-16 text-center border border-border rounded-xl">
+            <Plus className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground mb-1">No students added yet</p>
+            <p className="text-xs text-muted-foreground">Click "Add" to create a batch and assign hall numbers to students.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

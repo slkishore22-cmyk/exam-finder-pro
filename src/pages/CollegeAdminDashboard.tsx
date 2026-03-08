@@ -276,8 +276,10 @@ const CollegeAdminDashboard = () => {
               <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
             </div>
           ) : deptAdmins.length === 0 ? (
-            <div className="liquid-glass p-6 text-center">
-              <p className="text-muted-foreground text-sm">No department admins created yet.</p>
+            <div className="liquid-glass p-8 text-center">
+              <Layers className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">No department admins created yet</p>
+              <p className="text-xs text-muted-foreground">Click "Create Department Admin" to add departments and their admins.</p>
             </div>
           ) : (
             <div className="liquid-glass overflow-hidden">

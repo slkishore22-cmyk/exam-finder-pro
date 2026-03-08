@@ -236,7 +236,11 @@ const MasterDashboard = () => {
         <div className="liquid-glass p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Colleges</h2>
           {colleges.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No colleges yet.</p>
+            <div className="text-center py-12">
+              <Building2 className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">No colleges added yet</p>
+              <p className="text-xs text-muted-foreground">Click "Create College Admin" to add your first college and its super admin.</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {colleges.map(c => (
