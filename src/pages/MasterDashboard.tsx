@@ -270,7 +270,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -298,32 +298,21 @@ const MasterDashboard = () => {
               <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
             </div>
           </div>
-          <div className="liquid-glass p-6 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-primary" />
+          <div className="liquid-glass p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Total Students</p>
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  <p className="text-3xl font-bold text-foreground">{permanentTotal}</p>
+                  <Button size="sm" variant="outline" onClick={() => setResetCountOpen(true)}>
+                    Reset Count
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Current Students</p>
-              <p className="text-3xl font-bold text-foreground">{totalStudents}</p>
-            </div>
-          </div>
-          <div className="liquid-glass p-6 flex items-center gap-4 relative">
-            <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Permanent Total</p>
-              <p className="text-3xl font-bold text-foreground">{permanentTotal}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => setResetCountOpen(true)}
-              title="Reset Count"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </Button>
           </div>
         </div>
 
