@@ -78,14 +78,6 @@ const CollegeAdminDashboard = () => {
     }
   };
 
-  const fetchSubordinates = async () => {
-    try {
-      const res = await supabase.functions.invoke("manage-staff", {
-        body: { action: "list_college_subordinates" },
-      });
-      if (!res.error && res.data?.data) setAllSubordinates(res.data.data);
-    } catch { /* ignore - college admin may not have auth session */ }
-  };
 
   const fetchStats = async () => {
     if (!adminId) return;
