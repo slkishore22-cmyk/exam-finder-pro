@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,11 +79,14 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: adminErr.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // Hash password before storing in college_admins
+      const hashedPassword = await bcrypt.hash(password);
+
       // Also insert into college_admins table for college admin login
       const { error: caErr } = await supabaseAdmin.from("college_admins").insert({
         college_name,
         username,
-        password,
+        password: hashedPassword,
         is_active: true,
         created_by: callerAdmin.id,
         user_id: authData.user.id,
