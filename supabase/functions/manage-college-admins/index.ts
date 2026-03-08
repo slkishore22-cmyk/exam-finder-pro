@@ -96,6 +96,17 @@ Deno.serve(async (req) => {
         return json({ total_departments: (depts || []).length, total_students: studentCount || 0 });
       }
 
+      // === COLLEGE PERMANENT COUNT ===
+      if (action === "college_permanent_count") {
+        const { data: permRow } = await supabaseAdmin
+          .from("permanent_counts")
+          .select("total_students")
+          .eq("college_id", collegeId)
+          .single();
+
+        return json({ total: permRow?.total_students || 0 });
+      }
+
       // === CREATE DEPT ADMIN ===
       if (action === "create_dept_admin") {
         const { department_name, username, password } = payload;
