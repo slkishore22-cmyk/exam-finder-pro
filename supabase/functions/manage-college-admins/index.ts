@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       let passwordValid = false;
       if (admin.password.startsWith("$2")) {
         // bcrypt hash
-        passwordValid = await bcrypt.compare(password, admin.password);
+        passwordValid = bcrypt.compareSync(password, admin.password);
       } else {
         // Legacy plaintext — compare and upgrade to hash
         passwordValid = admin.password === password;
