@@ -242,7 +242,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -250,6 +250,15 @@ const MasterDashboard = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Colleges</p>
               <p className="text-3xl font-bold text-foreground">{colleges.length}</p>
+            </div>
+          </div>
+          <div className="liquid-glass p-6 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <UserPlus className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Dept Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
