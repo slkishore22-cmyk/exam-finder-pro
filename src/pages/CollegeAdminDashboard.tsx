@@ -22,7 +22,7 @@ const CollegeAdminDashboard = () => {
   const [collegeName, setCollegeName] = useState("");
   const [adminId, setAdminId] = useState("");
   const [deptAdmins, setDeptAdmins] = useState<DeptAdmin[]>([]);
-  const [allSubordinates, setAllSubordinates] = useState<any[]>([]);
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deptName, setDeptName] = useState("");
   const [username, setUsername] = useState("");
