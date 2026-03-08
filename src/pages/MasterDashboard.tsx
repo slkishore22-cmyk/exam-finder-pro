@@ -160,6 +160,32 @@ const MasterDashboard = () => {
     return () => { void supabase.removeChannel(channel); };
   }, [loading, fetchData]);
 
+  const handleResetCount = async () => {
+    if (resetMode === "specific" && !resetCountTarget) {
+      toast({ title: "Select a college", variant: "destructive" });
+      return;
+    }
+    setResettingCount(true);
+    try {
+      const res = await supabase.functions.invoke("master-student-count", {
+        body:
+          resetMode === "all"
+            ? { action: "reset", mode: "all" }
+            : { action: "reset", mode: "specific", college_id: resetCountTarget },
+      });
+      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message || "Reset failed");
+      toast({ title: "Count reset successfully" });
+      setResetCountOpen(false);
+      setResetMode("all");
+      setResetCountTarget("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingCount(false);
+    }
+  };
+
   const handleCreateCollegeAdmin = async () => {
     if (!collegeName.trim() || !adminUsername.trim() || !adminPassword.trim()) {
       toast({ title: "All fields required", variant: "destructive" }); return;
