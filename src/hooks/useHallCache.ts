@@ -23,14 +23,19 @@ function deduplicatedFetch(roll: string): Promise<HallRecord | null> {
   const key = roll.toUpperCase().trim();
   if (inflightRequests.has(key)) return inflightRequests.get(key)!;
 
-  const promise = supabase
-    .from("hall_assignments")
-    .select("roll_number, hall_number")
-    .eq("roll_number", key)
-    .limit(1)
-    .maybeSingle()
-    .then(({ data }) => (data ? { roll_number: data.roll_number, hall_number: data.hall_number } : null))
-    .finally(() => inflightRequests.delete(key));
+  const promise = (async () => {
+    try {
+      const { data } = await supabase
+        .from("hall_assignments")
+        .select("roll_number, hall_number")
+        .eq("roll_number", key)
+        .limit(1)
+        .maybeSingle();
+      return data ? { roll_number: data.roll_number, hall_number: data.hall_number } : null;
+    } finally {
+      inflightRequests.delete(key);
+    }
+  })();
 
   inflightRequests.set(key, promise);
   return promise;
