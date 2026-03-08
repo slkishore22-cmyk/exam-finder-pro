@@ -37,12 +37,12 @@ Deno.serve(async (req) => {
       let passwordValid = false;
       if (admin.password.startsWith("$2")) {
         // bcrypt hash
-        passwordValid = await bcrypt.compare(password, admin.password);
+        passwordValid = bcrypt.compareSync(password, admin.password);
       } else {
         // Legacy plaintext — compare and upgrade to hash
         passwordValid = admin.password === password;
         if (passwordValid) {
-          const hash = await bcrypt.hash(password);
+          const hash = bcrypt.hashSync(password);
           await supabaseAdmin
             .from("college_admins")
             .update({ password: hash })
@@ -349,7 +349,7 @@ Deno.serve(async (req) => {
       if (existing) return json({ error: "Username already exists" }, 400);
 
       // Hash the password before storing
-      const hashedPassword = await bcrypt.hash(password);
+      const hashedPassword = bcrypt.hashSync(password);
 
       const { error: insertErr } = await supabaseAdmin.from("college_admins").insert({
         college_name,
