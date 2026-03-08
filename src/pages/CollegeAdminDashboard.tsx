@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+
 
 interface DeptAdmin {
   id: string;
