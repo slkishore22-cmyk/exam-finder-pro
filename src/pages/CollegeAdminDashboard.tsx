@@ -32,7 +32,6 @@ const CollegeAdminDashboard = () => {
   const [totalStudents, setTotalStudents] = useState(0);
   
   const [totalDepartments, setTotalDepartments] = useState(0);
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
