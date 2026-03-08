@@ -235,6 +235,7 @@ const CollegeAdminDashboard = () => {
               <p className="text-xs text-muted-foreground">Current Students</p>
               <p className="text-2xl font-bold text-foreground">{totalStudents}</p>
             </div>
+          </div>
         </div>
 
         {/* Department Admins Section */}
