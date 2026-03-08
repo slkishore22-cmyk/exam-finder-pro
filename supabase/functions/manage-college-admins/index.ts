@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     }
 
     // === COLLEGE ADMIN ACTIONS (verified by admin_id from session) ===
-    if (["create_dept_admin", "list_dept_admins", "toggle_dept_admin", "college_stats"].includes(action)) {
+    if (["create_dept_admin", "list_dept_admins", "toggle_dept_admin", "college_stats", "college_permanent_count"].includes(action)) {
       const { admin_id } = payload;
       if (!admin_id) return json({ error: "Unauthorized" }, 401);
 
@@ -94,6 +94,17 @@ Deno.serve(async (req) => {
           .eq("college_id", collegeId);
 
         return json({ total_departments: (depts || []).length, total_students: studentCount || 0 });
+      }
+
+      // === COLLEGE PERMANENT COUNT ===
+      if (action === "college_permanent_count") {
+        const { data: permRow } = await supabaseAdmin
+          .from("permanent_counts")
+          .select("total_students")
+          .eq("college_id", collegeId)
+          .single();
+
+        return json({ total: permRow?.total_students || 0 });
       }
 
       // === CREATE DEPT ADMIN ===

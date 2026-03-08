@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, KeyRound } from "lucide-react";
+import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, KeyRound, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
@@ -30,6 +30,7 @@ const CollegeAdminDashboard = () => {
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [permanentStudents, setPermanentStudents] = useState(0);
   const [totalDepartments, setTotalDepartments] = useState(0);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -107,9 +108,22 @@ const CollegeAdminDashboard = () => {
     }
   };
 
+  const fetchPermanentCount = async () => {
+    // College admin doesn't have Supabase Auth session, so fetch via edge function
+    if (!adminId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-college-admins", {
+        body: { action: "college_permanent_count", admin_id: adminId },
+      });
+      if (!error && data && !data.error) {
+        setPermanentStudents(data.total || 0);
+      }
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (adminId) {
-      Promise.all([fetchDeptAdmins(), fetchStats(), fetchSubordinates()]).finally(() => setLoading(false));
+      Promise.all([fetchDeptAdmins(), fetchStats(), fetchSubordinates(), fetchPermanentCount()]).finally(() => setLoading(false));
     }
   }, [adminId]);
 
@@ -215,7 +229,7 @@ const CollegeAdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="liquid-glass p-5 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Layers className="w-5 h-5 text-primary" />
@@ -230,8 +244,17 @@ const CollegeAdminDashboard = () => {
               <Users className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Total Students</p>
+              <p className="text-xs text-muted-foreground">Current Students</p>
               <p className="text-2xl font-bold text-foreground">{totalStudents}</p>
+            </div>
+          </div>
+          <div className="liquid-glass p-5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Permanent Total</p>
+              <p className="text-2xl font-bold text-foreground">{permanentStudents}</p>
             </div>
           </div>
         </div>

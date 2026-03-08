@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound, GraduationCap, UserCheck } from "lucide-react";
+import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound, GraduationCap, UserCheck, RotateCcw, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface College {
   id: string;
@@ -40,6 +58,11 @@ const MasterDashboard = () => {
   const [resetUsername, setResetUsername] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [permanentTotal, setPermanentTotal] = useState(0);
+  const [permanentByCollege, setPermanentByCollege] = useState<Record<string, number>>({});
+  const [resetCountOpen, setResetCountOpen] = useState(false);
+  const [resetCountTarget, setResetCountTarget] = useState<string>("all");
+  const [resettingCount, setResettingCount] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -80,9 +103,10 @@ const MasterDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [collegeRes, statsRes] = await Promise.all([
+    const [collegeRes, statsRes, permRes] = await Promise.all([
       supabase.from("colleges").select("*").order("created_at", { ascending: false }),
       supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
+      supabase.from("permanent_counts").select("college_id, total_students"),
     ]);
     if (!collegeRes.error) setColleges(collegeRes.data || []);
     if (!statsRes.error && statsRes.data) {
@@ -91,8 +115,52 @@ const MasterDashboard = () => {
       setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
       setDetails(statsRes.data.details || []);
     }
+    // Permanent counts
+    if (!permRes.error && permRes.data) {
+      const byCollege: Record<string, number> = {};
+      let total = 0;
+      for (const row of permRes.data) {
+        byCollege[row.college_id] = row.total_students || 0;
+        total += row.total_students || 0;
+      }
+      setPermanentTotal(total);
+      setPermanentByCollege(byCollege);
+    }
     setFetching(false);
   }, []);
+
+  const handleResetCount = async () => {
+    setResettingCount(true);
+    try {
+      if (resetCountTarget === "all") {
+        const { error } = await supabase
+          .from("permanent_counts")
+          .update({ total_students: 0, last_reset_at: new Date().toISOString() } as any)
+          .neq("id", "00000000-0000-0000-0000-000000000000"); // update all
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("permanent_counts")
+          .update({ total_students: 0, last_reset_at: new Date().toISOString() } as any)
+          .eq("college_id", resetCountTarget);
+        if (error) throw error;
+      }
+      // Log activity
+      const collegeName_ = resetCountTarget === "all"
+        ? "all colleges"
+        : colleges.find(c => c.id === resetCountTarget)?.college_name || resetCountTarget;
+      await supabase.functions.invoke("manage-staff", {
+        body: { action: "log_activity", log_action: "reset_permanent_count", details: `Count reset for ${collegeName_} by master admin at ${new Date().toLocaleString()}` },
+      });
+      toast({ title: "Count reset successfully" });
+      setResetCountOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingCount(false);
+    }
+  };
 
   useEffect(() => { if (!loading) fetchData(); }, [loading, fetchData]);
 
@@ -193,7 +261,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -208,7 +276,7 @@ const MasterDashboard = () => {
               <UserCheck className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total College Super Admins</p>
+              <p className="text-sm text-muted-foreground">College Super Admins</p>
               <p className="text-3xl font-bold text-foreground">{totalCollegeAdmins}</p>
             </div>
           </div>
@@ -217,7 +285,7 @@ const MasterDashboard = () => {
               <Shield className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Department Admins</p>
+              <p className="text-sm text-muted-foreground">Department Admins</p>
               <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
             </div>
           </div>
@@ -226,9 +294,27 @@ const MasterDashboard = () => {
               <GraduationCap className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Students</p>
+              <p className="text-sm text-muted-foreground">Current Students</p>
               <p className="text-3xl font-bold text-foreground">{totalStudents}</p>
             </div>
+          </div>
+          <div className="liquid-glass p-6 flex items-center gap-4 relative">
+            <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Permanent Total</p>
+              <p className="text-3xl font-bold text-foreground">{permanentTotal}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+              onClick={() => setResetCountOpen(true)}
+              title="Reset Count"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
 
@@ -315,6 +401,40 @@ const MasterDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset Count Dialog */}
+      <AlertDialog open={resetCountOpen} onOpenChange={setResetCountOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Permanent Student Count</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset the count? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium text-foreground">Reset for</label>
+            <Select value={resetCountTarget} onValueChange={setResetCountTarget}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Colleges</SelectItem>
+                {colleges.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.college_name} ({permanentByCollege[c.id] || 0})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetCount} disabled={resettingCount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {resettingCount ? <div className="w-4 h-4 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" /> : "Reset Count"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
