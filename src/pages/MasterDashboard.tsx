@@ -53,10 +53,7 @@ const MasterDashboard = () => {
   const [adminPassword, setAdminPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [resetUsername, setResetUsername] = useState("");
-  const [resetPassword, setResetPassword] = useState("");
-  const [resetting, setResetting] = useState(false);
+  const [permanentTotal, setPermanentTotal] = useState(0);
   const [permanentTotal, setPermanentTotal] = useState(0);
   const [resetCountOpen, setResetCountOpen] = useState(false);
   const [resetMode, setResetMode] = useState<"all" | "specific">("all");
