@@ -291,53 +291,6 @@ const CollegeAdminDashboard = () => {
           )}
         </div>
 
-        {/* All Subordinates (dept admins + staff) */}
-        {allSubordinates.length > 0 ? (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
-            <div className="liquid-glass overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/50">
-                    <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Username</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Department</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Role</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allSubordinates.map(sub => (
-                    <tr key={sub.id} className="border-b border-border/30 last:border-0">
-                      <td className="p-3 text-foreground">{sub.full_name}</td>
-                      <td className="p-3 text-foreground">{sub.username}</td>
-                      <td className="p-3 text-muted-foreground">{sub.department_name}</td>
-                      <td className="p-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sub.role === "dept_admin" ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"}`}>
-                          {sub.role === "dept_admin" ? "Dept Admin" : "Staff"}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sub.is_active ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
-                          {sub.is_active ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
-            <div className="liquid-glass p-8 text-center">
-              <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">No admins or staff yet</p>
-              <p className="text-xs text-muted-foreground">Department admins and their staff will appear here once created.</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
