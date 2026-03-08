@@ -401,6 +401,40 @@ const MasterDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset Count Dialog */}
+      <AlertDialog open={resetCountOpen} onOpenChange={setResetCountOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Permanent Student Count</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset the count? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium text-foreground">Reset for</label>
+            <Select value={resetCountTarget} onValueChange={setResetCountTarget}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Colleges</SelectItem>
+                {colleges.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.college_name} ({permanentByCollege[c.id] || 0})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetCount} disabled={resettingCount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {resettingCount ? <div className="w-4 h-4 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin" /> : "Reset Count"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
