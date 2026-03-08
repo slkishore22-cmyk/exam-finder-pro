@@ -431,7 +431,7 @@ export type Database = {
           {
             foreignKeyName: "permanent_counts_college_id_fkey"
             columns: ["college_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "colleges"
             referencedColumns: ["id"]
           },
