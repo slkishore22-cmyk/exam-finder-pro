@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         // Legacy plaintext — compare and upgrade to hash
         passwordValid = admin.password === password;
         if (passwordValid) {
-          const hash = await bcrypt.hash(password);
+          const hash = bcrypt.hashSync(password);
           await supabaseAdmin
             .from("college_admins")
             .update({ password: hash })
