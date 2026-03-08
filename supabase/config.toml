@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.manage-college-admins]
 verify_jwt = false
+
+[functions.manage-staff]
+verify_jwt = false
+
+[functions.reset-admin-password]
+verify_jwt = false
