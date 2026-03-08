@@ -319,7 +319,7 @@ const MasterDashboard = () => {
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Total Students</p>
                 <div className="mt-1 flex flex-wrap items-center gap-3">
-                  <p className="text-3xl font-bold text-foreground">{permanentTotal}</p>
+                  <p className="text-3xl font-bold text-foreground flex items-center gap-2">{permanentTotal}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
                   <Button size="sm" variant="outline" onClick={() => setResetCountOpen(true)}>
                     Reset Count
                   </Button>
