@@ -288,33 +288,6 @@ const MasterDashboard = () => {
           )}
         </div>
 
-        {/* College Super Admins list */}
-        <div className="liquid-glass p-6 mt-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">College Super Admins</h2>
-          {collegeAdmins.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No college super admins yet. Click "Create College Super Admin" to add one.</p>
-          ) : (
-            <div className="space-y-3">
-              {collegeAdmins.map(a => (
-                <div key={a.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-card/50">
-                  <div>
-                    <p className="font-medium text-foreground">{a.college_name}</p>
-                    <p className="text-xs text-muted-foreground">Username: {a.username} · Created {a.created_at ? new Date(a.created_at).toLocaleDateString() : "—"}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${a.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
-                      {a.is_active ? "Active" : "Inactive"}
-                    </span>
-                    <Button variant="outline" size="sm" disabled={caTogglingId === a.id} onClick={() => handleToggleCollegeAdmin(a.id, a.is_active)}>
-                      {a.is_active ? <ToggleRight className="w-4 h-4 mr-1.5" /> : <ToggleLeft className="w-4 h-4 mr-1.5" />}
-                      {a.is_active ? "Deactivate" : "Activate"}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Create College Admin Dialog */}
