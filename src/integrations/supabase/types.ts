@@ -77,6 +77,7 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean | null
+          password: string
           user_id: string
           username: string
         }
@@ -86,6 +87,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean | null
+          password?: string
           user_id: string
           username: string
         }
@@ -95,6 +97,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean | null
+          password?: string
           user_id?: string
           username?: string
         }

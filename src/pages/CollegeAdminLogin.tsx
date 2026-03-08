@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
 import { Building2, LogIn } from "lucide-react";
 
 const CollegeAdminLogin = () => {
@@ -12,7 +11,6 @@ const CollegeAdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +30,11 @@ const CollegeAdminLogin = () => {
         throw new Error(res.data?.error || res.error?.message || "Login failed");
       }
 
-      // Set session from edge function response
-      if (res.data.session) {
-        await supabase.auth.setSession({
-          access_token: res.data.session.access_token,
-          refresh_token: res.data.session.refresh_token,
-        });
-      }
-
+      // Store session in sessionStorage (no Supabase Auth needed)
       sessionStorage.setItem("college_admin_session", JSON.stringify({
         admin_id: res.data.admin_id,
         college_name: res.data.college_name,
+        username: res.data.username,
       }));
 
       navigate("/college-admin/dashboard");

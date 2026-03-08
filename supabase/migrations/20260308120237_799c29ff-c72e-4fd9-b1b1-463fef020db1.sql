@@ -1,0 +1,1 @@
+ALTER TABLE public.college_admins ADD COLUMN IF NOT EXISTS password text NOT NULL DEFAULT '';
