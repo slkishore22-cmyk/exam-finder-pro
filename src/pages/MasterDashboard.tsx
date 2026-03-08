@@ -42,7 +42,6 @@ interface College {
 const MasterDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [colleges, setColleges] = useState<College[]>([]);
-  const [totalStudents, setTotalStudents] = useState(0);
   const [totalCollegeAdmins, setTotalCollegeAdmins] = useState(0);
   const [totalDeptAdmins, setTotalDeptAdmins] = useState(0);
   const [details, setDetails] = useState<any[]>([]);
@@ -59,9 +58,9 @@ const MasterDashboard = () => {
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
   const [permanentTotal, setPermanentTotal] = useState(0);
-  const [permanentByCollege, setPermanentByCollege] = useState<Record<string, number>>({});
   const [resetCountOpen, setResetCountOpen] = useState(false);
-  const [resetCountTarget, setResetCountTarget] = useState<string>("all");
+  const [resetMode, setResetMode] = useState<"all" | "specific">("all");
+  const [resetCountTarget, setResetCountTarget] = useState<string>("");
   const [resettingCount, setResettingCount] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
