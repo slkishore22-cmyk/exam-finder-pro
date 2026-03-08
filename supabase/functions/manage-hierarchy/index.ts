@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       }
 
       // Hash password before storing in college_admins
-      const hashedPassword = await bcrypt.hash(password);
+      const hashedPassword = bcrypt.hashSync(password);
 
       // Also insert into college_admins table for college admin login
       const { error: caErr } = await supabaseAdmin.from("college_admins").insert({

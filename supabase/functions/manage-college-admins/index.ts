@@ -349,7 +349,7 @@ Deno.serve(async (req) => {
       if (existing) return json({ error: "Username already exists" }, 400);
 
       // Hash the password before storing
-      const hashedPassword = await bcrypt.hash(password);
+      const hashedPassword = bcrypt.hashSync(password);
 
       const { error: insertErr } = await supabaseAdmin.from("college_admins").insert({
         college_name,
