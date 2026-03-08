@@ -257,16 +257,7 @@ const MasterDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="liquid-glass p-6 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Colleges</p>
-              <p className="text-3xl font-bold text-foreground flex items-center gap-2">{colleges.length}{fetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}</p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <UserCheck className="w-6 h-6 text-primary" />
