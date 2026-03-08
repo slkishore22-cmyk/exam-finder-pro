@@ -38,21 +38,15 @@ const MasterLogin = () => {
     setLoading(true);
 
     try {
-      const { data: adminRecord } = await supabase
-        .from("hierarchy_admins")
-        .select("id, locked_until, failed_login_attempts")
-        .eq("username", username)
-        .eq("role", "master_admin")
-        .single();
+      // Check lockout server-side via edge function (no direct DB query)
+      const { data: lockoutData } = await supabase.functions.invoke("manage-college-admins", {
+        body: { action: "check_lockout", username },
+      });
 
-      if (adminRecord?.locked_until) {
-        const lockEnd = new Date(adminRecord.locked_until);
-        if (lockEnd > new Date()) {
-          const mins = Math.ceil((lockEnd.getTime() - Date.now()) / 60000);
-          toast({ title: "Account locked", description: `Try again in ${mins} minute(s).`, variant: "destructive" });
-          setLoading(false);
-          return;
-        }
+      if (lockoutData?.locked) {
+        toast({ title: "Account locked", description: `Try again in ${lockoutData.minutes_remaining} minute(s).`, variant: "destructive" });
+        setLoading(false);
+        return;
       }
 
       const syntheticEmail = `${username}@master.examhall.internal`;
@@ -62,16 +56,7 @@ const MasterLogin = () => {
       });
 
       if (error) {
-        if (adminRecord) {
-          const attempts = (adminRecord.failed_login_attempts || 0) + 1;
-          if (attempts >= 5) {
-            toast({ title: "Account locked", description: "Too many failed attempts. Locked for 10 minutes.", variant: "destructive" });
-          } else {
-            toast({ title: "Login failed", description: `Invalid credentials. ${5 - attempts} attempts remaining.`, variant: "destructive" });
-          }
-        } else {
-          toast({ title: "Login failed", description: "Invalid credentials.", variant: "destructive" });
-        }
+        toast({ title: "Login failed", description: "Invalid credentials.", variant: "destructive" });
         setLoading(false);
         return;
       }

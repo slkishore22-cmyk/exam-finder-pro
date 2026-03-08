@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +33,24 @@ Deno.serve(async (req) => {
       if (findErr || !admin) return json({ error: "Invalid username or password" }, 401);
       if (!admin.is_active) return json({ error: "Account is deactivated. Contact master admin." }, 403);
 
-      if (admin.password !== password) {
+      // Support both bcrypt hashes and legacy plaintext during migration
+      let passwordValid = false;
+      if (admin.password.startsWith("$2")) {
+        // bcrypt hash
+        passwordValid = await bcrypt.compare(password, admin.password);
+      } else {
+        // Legacy plaintext — compare and upgrade to hash
+        passwordValid = admin.password === password;
+        if (passwordValid) {
+          const hash = await bcrypt.hash(password);
+          await supabaseAdmin
+            .from("college_admins")
+            .update({ password: hash })
+            .eq("id", admin.id);
+        }
+      }
+
+      if (!passwordValid) {
         return json({ error: "Invalid username or password" }, 401);
       }
 
@@ -42,6 +60,34 @@ Deno.serve(async (req) => {
         admin_id: admin.id,
         username: admin.username,
       });
+    }
+
+    // === MASTER LOGIN LOCKOUT CHECK (no auth required, server-side) ===
+    if (action === "check_lockout") {
+      const { username } = payload;
+      if (!username) return json({ error: "Username required" }, 400);
+
+      const { data: adminRecord } = await supabaseAdmin
+        .from("hierarchy_admins")
+        .select("id, locked_until, failed_login_attempts")
+        .eq("username", username)
+        .eq("role", "master_admin")
+        .single();
+
+      if (!adminRecord) {
+        // Don't reveal whether the username exists
+        return json({ locked: false });
+      }
+
+      if (adminRecord.locked_until) {
+        const lockEnd = new Date(adminRecord.locked_until);
+        if (lockEnd > new Date()) {
+          const mins = Math.ceil((lockEnd.getTime() - Date.now()) / 60000);
+          return json({ locked: true, minutes_remaining: mins });
+        }
+      }
+
+      return json({ locked: false });
     }
 
     // === COLLEGE ADMIN ACTIONS (verified by admin_id from session) ===
@@ -87,7 +133,6 @@ Deno.serve(async (req) => {
           .eq("college_id", collegeId)
           .eq("is_active", true);
 
-        // Count students from permanent_counts (never decreases)
         const { data: permRow } = await supabaseAdmin
           .from("permanent_counts")
           .select("total_students")
@@ -114,7 +159,6 @@ Deno.serve(async (req) => {
         if (!department_name || !username || !password) return json({ error: "All fields required" }, 400);
         if (password.length < 6) return json({ error: "Password must be at least 6 characters" }, 400);
 
-        // Check username uniqueness in hierarchy_admins
         const { data: existingAdmin } = await supabaseAdmin
           .from("hierarchy_admins")
           .select("id")
@@ -122,7 +166,6 @@ Deno.serve(async (req) => {
           .single();
         if (existingAdmin) return json({ error: "Username already exists" }, 400);
 
-        // Create department
         const { data: dept, error: deptErr } = await supabaseAdmin
           .from("departments")
           .insert({ department_name, college_id: collegeId, is_active: true })
@@ -130,7 +173,6 @@ Deno.serve(async (req) => {
           .single();
         if (deptErr || !dept) return json({ error: "Failed to create department: " + (deptErr?.message || "") }, 500);
 
-        // Create Supabase Auth user with synthetic email so they can login via /admin
         const syntheticEmail = `${username}@deptadmin.examhall.internal`;
         const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
           email: syntheticEmail,
@@ -139,7 +181,6 @@ Deno.serve(async (req) => {
         });
         if (authErr || !authData.user) return json({ error: "Failed to create auth user: " + (authErr?.message || "") }, 500);
 
-        // Insert into hierarchy_admins
         const { error: insertErr } = await supabaseAdmin.from("hierarchy_admins").insert({
           user_id: authData.user.id,
           username,
@@ -152,13 +193,11 @@ Deno.serve(async (req) => {
         });
         if (insertErr) return json({ error: "Failed to create admin record: " + insertErr.message }, 500);
 
-        // Create user_roles entry
         await supabaseAdmin.from("user_roles").insert({
           user_id: authData.user.id,
           role: "admin",
         });
 
-        // Create staff_count_tracker for the department
         await supabaseAdmin.from("staff_count_tracker").insert({
           department_id: dept.id,
           current_staff_count: 0,
@@ -178,7 +217,6 @@ Deno.serve(async (req) => {
           .order("created_at", { ascending: false });
         if (error) return json({ error: error.message }, 400);
 
-        // Get department names
         const deptIds = (data || []).map(d => d.department_id).filter(Boolean);
         let deptMap: Record<string, string> = {};
         if (deptIds.length > 0) {
@@ -204,7 +242,6 @@ Deno.serve(async (req) => {
         const { dept_admin_id, is_active } = payload;
         if (!dept_admin_id) return json({ error: "dept_admin_id required" }, 400);
 
-        // Verify this admin belongs to the same college
         const { data: targetAdmin } = await supabaseAdmin
           .from("hierarchy_admins")
           .select("id, college_id")
@@ -249,7 +286,6 @@ Deno.serve(async (req) => {
         supabaseAdmin.from("permanent_counts").select("college_id, total_students"),
       ]);
 
-      // Build a map of college_id -> permanent student count
       const permMap: Record<string, number> = {};
       let totalPermanentStudents = 0;
       for (const row of (permCountsRes.data || [])) {
@@ -257,7 +293,6 @@ Deno.serve(async (req) => {
         totalPermanentStudents += row.total_students || 0;
       }
 
-      // Build details: per-college breakdown
       const { data: allColleges } = await supabaseAdmin.from("colleges").select("id, college_name, is_active");
       const { data: allCollegeAdmins } = await supabaseAdmin.from("college_admins").select("id, college_name, username, is_active");
       const { data: allDeptAdmins } = await supabaseAdmin.from("hierarchy_admins").select("id, college_id").eq("role", "dept_admin");
@@ -313,10 +348,13 @@ Deno.serve(async (req) => {
         .single();
       if (existing) return json({ error: "Username already exists" }, 400);
 
+      // Hash the password before storing
+      const hashedPassword = await bcrypt.hash(password);
+
       const { error: insertErr } = await supabaseAdmin.from("college_admins").insert({
         college_name,
         username,
-        password,
+        password: hashedPassword,
         is_active: true,
         created_by: callerAdmin.id,
         user_id: user.id,
