@@ -319,7 +319,7 @@ const CollegeAdminDashboard = () => {
           )}
         </div>
 
-        {/* All Subordinates (dept admins + staff) with password reset */}
+        {/* All Subordinates (dept admins + staff) */}
         {allSubordinates.length > 0 ? (
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
@@ -332,7 +332,6 @@ const CollegeAdminDashboard = () => {
                     <th className="text-left p-3 font-medium text-muted-foreground">Department</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Role</th>
                     <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
-                    <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -350,11 +349,6 @@ const CollegeAdminDashboard = () => {
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sub.is_active ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
                           {sub.is_active ? "Active" : "Inactive"}
                         </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setResetTarget(sub.username); setResetOpen(true); }}>
-                          <KeyRound className="w-3.5 h-3.5 mr-1" /> Reset Password
-                        </Button>
                       </td>
                     </tr>
                   ))}
