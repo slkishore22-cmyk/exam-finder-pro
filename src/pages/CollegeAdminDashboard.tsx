@@ -123,7 +123,6 @@ const CollegeAdminDashboard = () => {
       setDialogOpen(false);
       fetchDeptAdmins();
       fetchStats();
-      fetchSubordinates();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
