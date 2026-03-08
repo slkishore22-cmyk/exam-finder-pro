@@ -232,9 +232,6 @@ const MasterDashboard = () => {
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-1.5" /> Create College Admin
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setCaDialogOpen(true)}>
-              <UserPlus className="w-4 h-4 mr-1.5" /> Create College Super Admin
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
               <LogOut className="w-4 h-4 mr-1.5" /> Sign out
             </Button>
