@@ -13,7 +13,7 @@ interface CachedResult {
 
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MEMORY_REFRESH_MS = 30 * 60 * 1000; // 30 minutes
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX = 50;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 // ── Request deduplication ──
