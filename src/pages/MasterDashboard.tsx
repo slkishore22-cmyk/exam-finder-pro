@@ -93,14 +93,17 @@ const MasterDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [collegeRes, studentRes, caRes] = await Promise.all([
+    const [collegeRes, caRes, statsRes] = await Promise.all([
       supabase.from("colleges").select("*").order("created_at", { ascending: false }),
-      supabase.from("hierarchy_students").select("id", { count: "exact", head: true }),
       supabase.functions.invoke("manage-college-admins", { body: { action: "list" } }),
+      supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
     ]);
     if (!collegeRes.error) setColleges(collegeRes.data || []);
-    if (!studentRes.error) setTotalStudents(studentRes.count || 0);
     if (!caRes.error && caRes.data?.data) setCollegeAdmins(caRes.data.data);
+    if (!statsRes.error && statsRes.data) {
+      setTotalStudents(statsRes.data.total_students || 0);
+      setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
+    }
     setFetching(false);
   }, []);
 
