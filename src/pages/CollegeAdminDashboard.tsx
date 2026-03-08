@@ -276,8 +276,10 @@ const CollegeAdminDashboard = () => {
               <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
             </div>
           ) : deptAdmins.length === 0 ? (
-            <div className="liquid-glass p-6 text-center">
-              <p className="text-muted-foreground text-sm">No department admins created yet.</p>
+            <div className="liquid-glass p-8 text-center">
+              <Layers className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">No department admins created yet</p>
+              <p className="text-xs text-muted-foreground">Click "Create Department Admin" to add departments and their admins.</p>
             </div>
           ) : (
             <div className="liquid-glass overflow-hidden">
@@ -321,7 +323,7 @@ const CollegeAdminDashboard = () => {
         </div>
 
         {/* All Subordinates (dept admins + staff) with password reset */}
-        {allSubordinates.length > 0 && (
+        {allSubordinates.length > 0 ? (
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
             <div className="liquid-glass overflow-hidden">
@@ -361,6 +363,15 @@ const CollegeAdminDashboard = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">All Admins & Staff</h2>
+            <div className="liquid-glass p-8 text-center">
+              <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">No admins or staff yet</p>
+              <p className="text-xs text-muted-foreground">Department admins and their staff will appear here once created.</p>
             </div>
           </div>
         )}
