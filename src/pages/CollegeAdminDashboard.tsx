@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff, KeyRound } from "lucide-react";
+import { LogOut, Building2, Users, Layers, Plus, Shield, ShieldOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+
 
 interface DeptAdmin {
   id: string;
@@ -32,7 +32,6 @@ const CollegeAdminDashboard = () => {
   const [totalStudents, setTotalStudents] = useState(0);
   
   const [totalDepartments, setTotalDepartments] = useState(0);
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -183,9 +182,6 @@ const CollegeAdminDashboard = () => {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{collegeName} - Super Admin</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setChangePasswordOpen(true)}>
-              <KeyRound className="w-4 h-4 mr-1.5" /> Password
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
               <LogOut className="w-4 h-4 mr-1.5" /> Sign out
             </Button>
@@ -343,9 +339,6 @@ const CollegeAdminDashboard = () => {
           </div>
         )}
       </div>
-
-
-      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
 };
