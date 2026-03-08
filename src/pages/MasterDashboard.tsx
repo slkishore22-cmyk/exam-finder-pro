@@ -224,25 +224,6 @@ const MasterDashboard = () => {
     navigate("/master");
   };
 
-  const handleResetPassword = async () => {
-    if (!resetUsername.trim() || !resetPassword.trim()) {
-      toast({ title: "All fields required", variant: "destructive" }); return;
-    }
-    if (resetPassword.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return;
-    }
-    setResetting(true);
-    try {
-      const res = await supabase.functions.invoke("reset-admin-password", {
-        body: { username: resetUsername.trim(), new_password: resetPassword },
-      });
-      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message || "Failed");
-      toast({ title: "Password reset successfully", description: res.data?.message });
-      setResetDialogOpen(false); setResetUsername(""); setResetPassword("");
-    } catch (err: any) {
-      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
-    } finally { setResetting(false); }
-  };
 
   if (loading) {
     return (
