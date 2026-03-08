@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound, UserPlus } from "lucide-react";
+import { LogOut, Sun, Moon, Plus, RefreshCw, ToggleLeft, ToggleRight, Building2, Users, Shield, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,19 +20,11 @@ interface College {
   created_at: string | null;
 }
 
-interface CollegeAdmin {
-  id: string;
-  college_name: string;
-  username: string;
-  is_active: boolean | null;
-  created_at: string | null;
-}
-
 const MasterDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [colleges, setColleges] = useState<College[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [totalDeptAdmins, setTotalDeptAdmins] = useState(0);
+  const [totalAdmins, setTotalAdmins] = useState(0);
   const [fetching, setFetching] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -45,17 +37,9 @@ const MasterDashboard = () => {
   const [resetUsername, setResetUsername] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
-  const [collegeAdmins, setCollegeAdmins] = useState<CollegeAdmin[]>([]);
-  const [caDialogOpen, setCaDialogOpen] = useState(false);
-  const [caCollegeName, setCaCollegeName] = useState("");
-  const [caUsername, setCaUsername] = useState("");
-  const [caPassword, setCaPassword] = useState("");
-  const [caCreating, setCaCreating] = useState(false);
-  const [caTogglingId, setCaTogglingId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Auth check
   useEffect(() => {
     const session = sessionStorage.getItem("master_admin_session");
     if (!session) { navigate("/master"); return; }
@@ -75,7 +59,6 @@ const MasterDashboard = () => {
     checkAuth();
   }, [navigate]);
 
-  // Inactivity timeout
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const resetTimer = () => {
@@ -94,16 +77,14 @@ const MasterDashboard = () => {
 
   const fetchData = useCallback(async () => {
     setFetching(true);
-    const [collegeRes, caRes, statsRes] = await Promise.all([
+    const [collegeRes, statsRes] = await Promise.all([
       supabase.from("colleges").select("*").order("created_at", { ascending: false }),
-      supabase.functions.invoke("manage-college-admins", { body: { action: "list" } }),
       supabase.functions.invoke("manage-college-admins", { body: { action: "master_stats" } }),
     ]);
     if (!collegeRes.error) setColleges(collegeRes.data || []);
-    if (!caRes.error && caRes.data?.data) setCollegeAdmins(caRes.data.data);
     if (!statsRes.error && statsRes.data) {
       setTotalStudents(statsRes.data.total_students || 0);
-      setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
+      setTotalAdmins(statsRes.data.total_admins || 0);
     }
     setFetching(false);
   }, []);
@@ -171,41 +152,6 @@ const MasterDashboard = () => {
     } finally { setResetting(false); }
   };
 
-  const handleCreateCollegeAdminNew = async () => {
-    if (!caCollegeName.trim() || !caUsername.trim() || !caPassword.trim()) {
-      toast({ title: "All fields required", variant: "destructive" }); return;
-    }
-    if (caPassword.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return;
-    }
-    setCaCreating(true);
-    try {
-      const res = await supabase.functions.invoke("manage-college-admins", {
-        body: { action: "create", college_name: caCollegeName.trim(), username: caUsername.trim(), password: caPassword },
-      });
-      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message);
-      toast({ title: "College super admin created successfully" });
-      setCaDialogOpen(false); setCaCollegeName(""); setCaUsername(""); setCaPassword("");
-      fetchData();
-    } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
-    } finally { setCaCreating(false); }
-  };
-
-  const handleToggleCollegeAdmin = async (adminId: string, currentActive: boolean | null) => {
-    setCaTogglingId(adminId);
-    try {
-      const res = await supabase.functions.invoke("manage-college-admins", {
-        body: { action: "toggle", admin_id: adminId, is_active: !currentActive },
-      });
-      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message);
-      setCollegeAdmins(prev => prev.map(a => a.id === adminId ? { ...a, is_active: !currentActive } : a));
-      toast({ title: `College admin ${!currentActive ? "activated" : "deactivated"}` });
-    } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
-    } finally { setCaTogglingId(null); }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -217,7 +163,6 @@ const MasterDashboard = () => {
   return (
     <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6 text-primary" />
@@ -255,11 +200,11 @@ const MasterDashboard = () => {
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <UserPlus className="w-6 h-6 text-primary" />
+              <Shield className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Dept Admins</p>
-              <p className="text-3xl font-bold text-foreground">{totalDeptAdmins}</p>
+              <p className="text-sm text-muted-foreground">Total Admins</p>
+              <p className="text-3xl font-bold text-foreground">{totalAdmins}</p>
             </div>
           </div>
           <div className="liquid-glass p-6 flex items-center gap-4">
@@ -300,7 +245,6 @@ const MasterDashboard = () => {
             </div>
           )}
         </div>
-
       </div>
 
       {/* Create College Admin Dialog */}
@@ -353,7 +297,6 @@ const MasterDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 };

@@ -240,15 +240,15 @@ Deno.serve(async (req) => {
         .single();
       if (!callerAdmin || callerAdmin.role !== "master_admin") return json({ error: "Forbidden" }, 403);
 
-      const [collegesRes, deptAdminsRes, studentsRes] = await Promise.all([
+      const [collegesRes, adminsRes, studentsRes] = await Promise.all([
         supabaseAdmin.from("colleges").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }).eq("role", "dept_admin"),
-        supabaseAdmin.from("hierarchy_students").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hierarchy_admins").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hall_assignments").select("id", { count: "exact", head: true }),
       ]);
 
       return json({
         total_colleges: collegesRes.count || 0,
-        total_dept_admins: deptAdminsRes.count || 0,
+        total_admins: adminsRes.count || 0,
         total_students: studentsRes.count || 0,
       });
     }
