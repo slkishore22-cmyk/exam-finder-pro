@@ -98,8 +98,9 @@ const MasterDashboard = () => {
 
   const hasFetchedOnce = useRef(false);
 
-  const fetchData = useCallback(async (silent = false) => {
+  const fetchData = useCallback(async (silent = false, showSuccessToast = false) => {
     if (!silent) setFetching(true);
+
     try {
       const [collegeRes, statsRes, countRes] = await Promise.all([
         supabase.from("colleges").select("*").order("created_at", { ascending: false }),
@@ -107,26 +108,32 @@ const MasterDashboard = () => {
         supabase.functions.invoke("master-student-count", { body: { action: "summary" } }),
       ]);
 
-      // Only update state if data arrived successfully — never clear existing data
-      if (!collegeRes.error && collegeRes.data) setColleges(collegeRes.data);
+      const collegeOk = !collegeRes.error && !!collegeRes.data;
+      const statsOk = !statsRes.error && !!statsRes.data && !statsRes.data.error;
+      const countOk = !countRes.error && !!countRes.data && !countRes.data.error;
 
-      if (!statsRes.error && statsRes.data && !statsRes.data.error) {
+      if (collegeOk) setColleges(collegeRes.data as College[]);
+
+      if (statsOk) {
         setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
         setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
         setDetails(statsRes.data.details || []);
       }
 
-      if (!countRes.error && countRes.data && !countRes.data.error) {
+      if (countOk) {
         setPermanentTotal(countRes.data.total_students || 0);
       }
 
-      hasFetchedOnce.current = true;
-
-      // If ALL calls failed, show error but keep old data
-      const allFailed = !!collegeRes.error && (!!statsRes.error || statsRes.data?.error) && (!!countRes.error || countRes.data?.error);
-      if (allFailed && hasFetchedOnce.current) {
-        toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
+      const allFailed = !collegeOk && !statsOk && !countOk;
+      if (allFailed) {
+        if (hasFetchedOnce.current) {
+          toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
+        }
+      } else if (showSuccessToast) {
+        toast({ title: "Dashboard refreshed" });
       }
+
+      hasFetchedOnce.current = true;
     } catch {
       if (hasFetchedOnce.current) {
         toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
@@ -244,7 +251,7 @@ const MasterDashboard = () => {
             <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => { document.documentElement.classList.toggle("dark"); setDark(d => !d); }}>
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => fetchData()} disabled={fetching}>
+            <Button variant="outline" size="sm" onClick={() => fetchData(false, true)} disabled={fetching}>
               <RefreshCw className={`w-4 h-4 mr-1.5 ${fetching ? "animate-spin" : ""}`} /> Refresh
             </Button>
             <Button size="sm" onClick={() => setDialogOpen(true)}>

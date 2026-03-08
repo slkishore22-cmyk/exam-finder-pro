@@ -98,33 +98,40 @@ const AdminDashboard = () => {
   const fetchData = useCallback(async () => {
     setFetching(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    let departmentId: string | null = null;
-    if (user) {
-      const { data: adminInfo } = await supabase
-        .from("hierarchy_admins")
-        .select("department_id, role")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .single();
-      if (adminInfo?.department_id) {
-        departmentId = adminInfo.department_id;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let departmentId: string | null = null;
+      if (user) {
+        const { data: adminInfo, error: adminErr } = await supabase
+          .from("hierarchy_admins")
+          .select("department_id, role")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .single();
+
+        if (adminErr) throw adminErr;
+        if (adminInfo?.department_id) {
+          departmentId = adminInfo.department_id;
+        }
       }
-    }
 
-    let batchQuery = supabase.from("assignment_batches").select("id, name, scheduled_at, created_at").order("created_at", { ascending: false });
-    let assignQuery = supabase.from("hall_assignments").select("id, roll_number, hall_number, batch_id").order("roll_number");
+      let batchQuery = supabase.from("assignment_batches").select("id, name, scheduled_at, created_at").order("created_at", { ascending: false });
+      let assignQuery = supabase.from("hall_assignments").select("id, roll_number, hall_number, batch_id").order("roll_number");
 
-    if (departmentId) {
-      batchQuery = batchQuery.eq("department_id", departmentId);
-      assignQuery = assignQuery.eq("department_id", departmentId);
-    }
+      if (departmentId) {
+        batchQuery = batchQuery.eq("department_id", departmentId);
+        assignQuery = assignQuery.eq("department_id", departmentId);
+      }
 
-    const [batchRes, assignRes] = await Promise.all([batchQuery, assignQuery]);
+      const [batchRes, assignRes] = await Promise.all([batchQuery, assignQuery]);
 
-    if (batchRes.error || assignRes.error) {
-      toast({ title: "Failed to load data", variant: "destructive" });
-    } else {
+      if (batchRes.error || assignRes.error) {
+        throw new Error(batchRes.error?.message || assignRes.error?.message || "Failed to load data");
+      }
+
       const batchList = batchRes.data || [];
       const assignList = assignRes.data || [];
       const grouped: GroupedBatch[] = batchList.map(b => ({
@@ -132,8 +139,11 @@ const AdminDashboard = () => {
         assignments: assignList.filter(a => a.batch_id === b.id),
       }));
       setBatches(grouped);
+    } catch (err: any) {
+      toast({ title: "Failed to load data", description: err?.message, variant: "destructive" });
+    } finally {
+      setFetching(false);
     }
-    setFetching(false);
   }, [toast]);
 
   const fetchStaff = useCallback(async () => {
@@ -162,10 +172,9 @@ const AdminDashboard = () => {
     }
   }, [loading, fetchData, fetchStaff, fetchActivity]);
 
-  const handleRefreshAll = () => {
-    fetchData();
-    fetchStaff();
-    fetchActivity();
+  const handleRefreshAll = async () => {
+    await Promise.all([fetchData(), fetchStaff(), fetchActivity()]);
+    toast({ title: "Refreshed" });
   };
 
   const handleDeleteBatch = async (batchId: string) => {
