@@ -69,7 +69,7 @@ const AdminLogin = () => {
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                type="email"
+                type="text"
                 placeholder="Email or Username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
