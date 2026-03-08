@@ -25,7 +25,9 @@ const MasterDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [colleges, setColleges] = useState<College[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [totalAdmins, setTotalAdmins] = useState(0);
+  const [totalCollegeAdmins, setTotalCollegeAdmins] = useState(0);
+  const [totalDeptAdmins, setTotalDeptAdmins] = useState(0);
+  const [details, setDetails] = useState<any[]>([]);
   const [fetching, setFetching] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [dialogOpen, setDialogOpen] = useState(false);
