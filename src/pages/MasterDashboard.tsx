@@ -100,8 +100,10 @@ const MasterDashboard = () => {
     return () => { clearTimeout(timer); events.forEach(e => window.removeEventListener(e, resetTimer)); };
   }, [navigate]);
 
-  const fetchData = useCallback(async () => {
-    setFetching(true);
+  const hasFetchedOnce = useRef(false);
+
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setFetching(true);
     try {
       const [collegeRes, statsRes, countRes] = await Promise.all([
         supabase.from("colleges").select("*").order("created_at", { ascending: false }),
@@ -109,9 +111,10 @@ const MasterDashboard = () => {
         supabase.functions.invoke("master-student-count", { body: { action: "summary" } }),
       ]);
 
-      if (!collegeRes.error) setColleges(collegeRes.data || []);
+      // Only update state if data arrived successfully — never clear existing data
+      if (!collegeRes.error && collegeRes.data) setColleges(collegeRes.data);
 
-      if (!statsRes.error && statsRes.data) {
+      if (!statsRes.error && statsRes.data && !statsRes.data.error) {
         setTotalCollegeAdmins(statsRes.data.total_college_admins || 0);
         setTotalDeptAdmins(statsRes.data.total_dept_admins || 0);
         setDetails(statsRes.data.details || []);
@@ -120,57 +123,41 @@ const MasterDashboard = () => {
       if (!countRes.error && countRes.data && !countRes.data.error) {
         setPermanentTotal(countRes.data.total_students || 0);
       }
+
+      hasFetchedOnce.current = true;
+
+      // If ALL calls failed, show error but keep old data
+      const allFailed = !!collegeRes.error && (!!statsRes.error || statsRes.data?.error) && (!!countRes.error || countRes.data?.error);
+      if (allFailed && hasFetchedOnce.current) {
+        toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
+      }
+    } catch {
+      if (hasFetchedOnce.current) {
+        toast({ title: "Refresh failed. Showing last data.", variant: "destructive" });
+      }
     } finally {
-      setFetching(false);
+      if (!silent) setFetching(false);
     }
-  }, []);
+  }, [toast]);
 
-  const handleResetCount = async () => {
-    if (resetMode === "specific" && !resetCountTarget) {
-      toast({ title: "Select a college", variant: "destructive" });
-      return;
-    }
-
-    setResettingCount(true);
-    try {
-      const res = await supabase.functions.invoke("master-student-count", {
-        body:
-          resetMode === "all"
-            ? { action: "reset", mode: "all" }
-            : { action: "reset", mode: "specific", college_id: resetCountTarget },
-      });
-
-      if (res.error || res.data?.error) throw new Error(res.data?.error || res.error?.message || "Reset failed");
-
-      toast({ title: "Count reset successfully" });
-      setResetCountOpen(false);
-      setResetMode("all");
-      setResetCountTarget("");
-      fetchData();
-    } catch (err: any) {
-      toast({ title: "Reset failed", description: err.message, variant: "destructive" });
-    } finally {
-      setResettingCount(false);
-    }
-  };
-
+  // Initial fetch
   useEffect(() => { if (!loading) fetchData(); }, [loading, fetchData]);
 
+  // Auto-refresh every 5 minutes (silent)
   useEffect(() => {
     if (loading) return;
+    const id = setInterval(() => fetchData(true), 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [loading, fetchData]);
 
+  // Realtime subscription for permanent_counts changes
+  useEffect(() => {
+    if (loading) return;
     const channel = supabase
       .channel("master-student-count-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "permanent_counts" },
-        () => fetchData(),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "permanent_counts" }, () => fetchData(true))
       .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return () => { void supabase.removeChannel(channel); };
   }, [loading, fetchData]);
 
   const handleCreateCollegeAdmin = async () => {
